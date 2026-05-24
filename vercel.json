@@ -1,16 +1,25 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "outputDirectory": "dist/client",
   "devCommand": "npm run dev",
-  "framework": "tanstack-start",
-  "rewrites": [
-    {
-      "source": "/:path((?!.*\\.).*)",
-      "destination": "/index.html"
-    }
-  ],
   "env": {
     "NODE_ENV": "production"
   },
-  "regions": ["iad1"]
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
