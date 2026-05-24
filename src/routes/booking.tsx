@@ -1,12 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Calendar, Car, MapPin, ShieldCheck } from "lucide-react";
-import { Header } from "@/components/site/Header";
-import { Footer } from "@/components/site/Footer";
-import { peso, vehicles } from "@/data/vehicles";
+import {
+  AlertCircle,
+  Calendar,
+  Car,
+  CheckCircle2,
+  Loader2,
+  MapPin,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
+import { Footer } from "@/components/site/Footer";
+import { Header } from "@/components/site/Header";
+import { peso, vehicles } from "@/data/vehicles";
 
 type Search = { vehicle?: string };
+type BookingErrors = Partial<Record<"pickup" | "dropoff" | "name" | "email" | "phone", string>>;
 
 export const Route = createFileRoute("/booking")({
   validateSearch: (s: Record<string, unknown>): Search => ({
@@ -14,8 +23,11 @@ export const Route = createFileRoute("/booking")({
   }),
   head: () => ({
     meta: [
-      { title: "Book a car — Briah's Car Rental" },
-      { name: "description", content: "Reserve your car in minutes. Self-drive or with a driver, pickup in Taft or Antipolo." },
+      { title: "Book a car - Briah's Car Rental" },
+      {
+        name: "description",
+        content: "Reserve your car in minutes. Self-drive rentals with pickup in Taft or Antipolo.",
+      },
     ],
     links: [{ rel: "canonical", href: "/booking" }],
   }),
@@ -28,11 +40,15 @@ function BookingPage() {
 
   const [vehicleId, setVehicleId] = useState(initial.id);
   const [branch, setBranch] = useState(initial.branch);
+  const [returnBranch, setReturnBranch] = useState("Same as pickup");
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [errors, setErrors] = useState<BookingErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const selected = vehicles.find((v) => v.id === vehicleId) ?? initial;
 
@@ -42,12 +58,28 @@ function BookingPage() {
     return Math.max(1, Math.ceil(ms / 86400000));
   }, [pickup, dropoff]);
   const total = selected.pricePerDay * days;
+  const minDateTime = getNowInputValue();
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    toast.success("Booking received!", {
-      description: `${selected.name} • ${days} day${days > 1 ? "s" : ""} • ${peso(total)} — we'll confirm by email shortly.`,
-    });
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitted(false);
+
+    const nextErrors = validateBooking({ pickup, dropoff, name, email, phone });
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error("Please review the highlighted fields.");
+      return;
+    }
+
+    setSubmitting(true);
+    window.setTimeout(() => {
+      setSubmitting(false);
+      setSubmitted(true);
+      toast.success("Booking request received", {
+        description: `${selected.name} - ${days} day${days > 1 ? "s" : ""} - ${peso(total)}. We'll confirm by email shortly.`,
+      });
+    }, 650);
   }
 
   return (
@@ -56,91 +88,225 @@ function BookingPage() {
 
       <section className="border-b border-border bg-secondary/60">
         <div className="container-page py-14 text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Reserve your car</p>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">
+            Reserve your car
+          </p>
           <h1 className="mt-2 font-display text-4xl font-semibold md:text-5xl">Booking</h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
             Tell us where you're going. We'll confirm availability within a few hours.
           </p>
         </div>
       </section>
 
       <section className="container-page mt-10 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-        <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-8 shadow-soft">
-          <h2 className="font-display text-2xl font-semibold">Trip details</h2>
+        <form
+          onSubmit={submit}
+          noValidate
+          className="rounded-xl border border-border bg-card p-5 shadow-soft md:p-8"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="font-display text-2xl font-semibold">Trip details</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Choose your vehicle, schedule, and pickup branch.
+              </p>
+            </div>
+            {submitted && (
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Request sent
+              </span>
+            )}
+          </div>
 
           <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <Field label="Vehicle">
-              <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} className="input">
+            <Field label="Vehicle" id="booking-vehicle">
+              <select
+                id="booking-vehicle"
+                value={vehicleId}
+                onChange={(event) => setVehicleId(event.target.value)}
+                className="input-control"
+              >
                 {vehicles.map((v) => (
-                  <option key={v.id} value={v.id}>{v.name} — {peso(v.pricePerDay)}/day</option>
+                  <option key={v.id} value={v.id}>
+                    {v.name} - {peso(v.pricePerDay)}/day
+                  </option>
                 ))}
               </select>
             </Field>
-            <Field label="Drive mode">
-              <input className="input" value="Self-drive" disabled />
+            <Field label="Drive mode" id="booking-drive-mode">
+              <input
+                id="booking-drive-mode"
+                className="input-control"
+                value="Self-drive"
+                disabled
+              />
             </Field>
-            <Field label="Pickup branch">
-              <select value={branch} onChange={(e) => setBranch(e.target.value as never)} className="input">
+            <Field label="Pickup branch" id="booking-branch">
+              <select
+                id="booking-branch"
+                value={branch}
+                onChange={(event) => setBranch(event.target.value as never)}
+                className="input-control"
+              >
                 <option>Taft, Manila</option>
                 <option>Antipolo, Rizal</option>
               </select>
             </Field>
-            <Field label="Return branch">
-              <select className="input" defaultValue={branch}>
+            <Field label="Return branch" id="booking-return-branch">
+              <select
+                id="booking-return-branch"
+                value={returnBranch}
+                onChange={(event) => setReturnBranch(event.target.value)}
+                className="input-control"
+              >
                 <option>Same as pickup</option>
                 <option>Taft, Manila</option>
                 <option>Antipolo, Rizal</option>
               </select>
             </Field>
-            <Field label="Pickup date &amp; time">
-              <input type="datetime-local" value={pickup} onChange={(e) => setPickup(e.target.value)} className="input" required />
+            <Field label="Pickup date and time" id="booking-pickup" error={errors.pickup}>
+              <input
+                id="booking-pickup"
+                type="datetime-local"
+                value={pickup}
+                min={minDateTime}
+                onChange={(event) => {
+                  setPickup(event.target.value);
+                  setErrors((current) => ({ ...current, pickup: undefined }));
+                }}
+                aria-invalid={Boolean(errors.pickup)}
+                aria-describedby={errors.pickup ? "booking-pickup-error" : undefined}
+                className="input-control [color-scheme:dark]"
+                required
+              />
             </Field>
-            <Field label="Return date &amp; time">
-              <input type="datetime-local" value={dropoff} onChange={(e) => setDropoff(e.target.value)} className="input" required />
+            <Field label="Return date and time" id="booking-dropoff" error={errors.dropoff}>
+              <input
+                id="booking-dropoff"
+                type="datetime-local"
+                value={dropoff}
+                min={pickup || minDateTime}
+                onChange={(event) => {
+                  setDropoff(event.target.value);
+                  setErrors((current) => ({ ...current, dropoff: undefined }));
+                }}
+                aria-invalid={Boolean(errors.dropoff)}
+                aria-describedby={errors.dropoff ? "booking-dropoff-error" : undefined}
+                className="input-control [color-scheme:dark]"
+                required
+              />
             </Field>
           </div>
 
           <h2 className="mt-10 font-display text-2xl font-semibold">Your details</h2>
           <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <Field label="Full name">
-              <input value={name} onChange={(e) => setName(e.target.value)} className="input" required />
+            <Field label="Full name" id="booking-name" error={errors.name}>
+              <input
+                id="booking-name"
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setErrors((current) => ({ ...current, name: undefined }));
+                }}
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? "booking-name-error" : undefined}
+                className="input-control"
+                autoComplete="name"
+                required
+              />
             </Field>
-            <Field label="Email">
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input" required />
+            <Field label="Email" id="booking-email" error={errors.email}>
+              <input
+                id="booking-email"
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setErrors((current) => ({ ...current, email: undefined }));
+                }}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? "booking-email-error" : undefined}
+                className="input-control"
+                autoComplete="email"
+                required
+              />
             </Field>
-            <Field label="Phone (PH)">
-              <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" placeholder="+63 917 000 0000" required />
+            <Field label="Phone (PH)" id="booking-phone" error={errors.phone}>
+              <input
+                id="booking-phone"
+                value={phone}
+                onChange={(event) => {
+                  setPhone(event.target.value);
+                  setErrors((current) => ({ ...current, phone: undefined }));
+                }}
+                aria-invalid={Boolean(errors.phone)}
+                aria-describedby={errors.phone ? "booking-phone-error" : undefined}
+                className="input-control"
+                placeholder="+63 917 000 0000"
+                autoComplete="tel"
+                required
+              />
             </Field>
-            <Field label="Destination (optional)">
-              <input className="input" placeholder="e.g. Baguio, La Union" />
+            <Field label="Destination (optional)" id="booking-destination">
+              <input
+                id="booking-destination"
+                className="input-control"
+                placeholder="e.g. Baguio, La Union"
+              />
             </Field>
           </div>
 
-          <button type="submit" className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            Request booking
+          <button
+            type="submit"
+            disabled={submitting}
+            className="touch-target mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {submitting ? "Sending request..." : "Request booking"}
           </button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            You won't be charged yet — we'll confirm availability first.
+            You won't be charged yet - we'll confirm availability first.
           </p>
         </form>
 
         <aside className="space-y-6">
-          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-            <img src={selected.image} alt={selected.name} className="aspect-[4/3] w-full object-cover" />
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+            <img
+              src={selected.image}
+              alt={selected.name}
+              className="aspect-[4/3] w-full object-cover"
+            />
             <div className="p-6">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">{selected.category}</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                {selected.category}
+              </div>
               <h3 className="font-display text-xl font-semibold">{selected.name}</h3>
               <div className="mt-3 space-y-2 text-sm">
-                <Row icon={<Car className="h-4 w-4 text-primary" />} label="Mode" value="Self-drive" />
-                <Row icon={<MapPin className="h-4 w-4 text-primary" />} label="Branch" value={branch} />
-                <Row icon={<Calendar className="h-4 w-4 text-primary" />} label="Duration" value={`${days} day${days > 1 ? "s" : ""}`} />
+                <Row
+                  icon={<Car className="h-4 w-4 text-primary" />}
+                  label="Mode"
+                  value="Self-drive"
+                />
+                <Row
+                  icon={<MapPin className="h-4 w-4 text-primary" />}
+                  label="Branch"
+                  value={branch}
+                />
+                <Row
+                  icon={<Calendar className="h-4 w-4 text-primary" />}
+                  label="Duration"
+                  value={`${days} day${days > 1 ? "s" : ""}`}
+                />
               </div>
               <div className="mt-5 space-y-1.5 border-t border-border pt-4 text-sm">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{selected.name} × {days}</span>
+                <div className="flex justify-between gap-4 text-muted-foreground">
+                  <span>
+                    {selected.name} x {days}
+                  </span>
                   <span>{peso(selected.pricePerDay * days)}</span>
                 </div>
-                <div className="flex justify-between pt-2 font-display text-lg font-semibold">
+                <div className="flex justify-between gap-4 pt-2 font-display text-lg font-semibold">
                   <span>Total estimate</span>
                   <span className="text-primary">{peso(total)}</span>
                 </div>
@@ -148,52 +314,94 @@ function BookingPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-secondary p-5 text-sm">
-            <div className="flex items-center gap-2 font-medium"><ShieldCheck className="h-4 w-4 text-primary" /> What's included</div>
-            <ul className="mt-3 space-y-1.5 text-muted-foreground">
-              <li>• Comprehensive insurance</li>
-              <li>• 24/7 roadside assistance</li>
-              <li>• Free cancellation up to 24h before pickup</li>
+          <div className="rounded-xl border border-border bg-secondary p-5 text-sm">
+            <div className="flex items-center gap-2 font-medium">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              What's included
+            </div>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted-foreground">
+              <li>Comprehensive insurance</li>
+              <li>24/7 roadside assistance</li>
+              <li>Free cancellation up to 24h before pickup</li>
             </ul>
           </div>
         </aside>
       </section>
 
       <Footer />
-
-      <style>{`
-        .input {
-          width: 100%;
-          height: 2.75rem;
-          border-radius: 0.6rem;
-          border: 1px solid var(--color-border);
-          background: var(--color-card);
-          padding: 0 0.875rem;
-          font-size: 0.875rem;
-          color: var(--color-foreground);
-          outline: none;
-          transition: border-color .15s, box-shadow .15s;
-        }
-        .input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent); }
-      `}</style>
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  id,
+  error,
+  children,
+}: {
+  label: string;
+  id: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-medium text-muted-foreground" dangerouslySetInnerHTML={{ __html: label }} />
+    <label className="block" htmlFor={id}>
+      <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
       {children}
+      {error && (
+        <span
+          id={`${id}-error`}
+          className="mt-1.5 flex items-start gap-1.5 text-xs leading-5 text-rose-300"
+        >
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {error}
+        </span>
+      )}
     </label>
   );
 }
 
 function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="flex items-center gap-2 text-muted-foreground">{icon}{label}</span>
-      <span className="font-medium">{value}</span>
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <span className="flex items-center gap-2 text-muted-foreground">
+        {icon}
+        {label}
+      </span>
+      <span className="text-right font-medium">{value}</span>
     </div>
   );
+}
+
+function validateBooking({
+  pickup,
+  dropoff,
+  name,
+  email,
+  phone,
+}: {
+  pickup: string;
+  dropoff: string;
+  name: string;
+  email: string;
+  phone: string;
+}) {
+  const nextErrors: BookingErrors = {};
+
+  if (!pickup) nextErrors.pickup = "Choose a pickup date and time.";
+  if (!dropoff) nextErrors.dropoff = "Choose a return date and time.";
+  if (pickup && dropoff && new Date(dropoff).getTime() <= new Date(pickup).getTime()) {
+    nextErrors.dropoff = "Return must be after pickup.";
+  }
+  if (!name.trim()) nextErrors.name = "Enter your full name.";
+  if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = "Enter a valid email address.";
+  if (phone.replace(/\D/g, "").length < 10) nextErrors.phone = "Enter a valid phone number.";
+
+  return nextErrors;
+}
+
+function getNowInputValue() {
+  const now = new Date();
+  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
 }

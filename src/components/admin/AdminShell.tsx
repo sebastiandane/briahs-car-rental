@@ -17,6 +17,7 @@ import {
   Search,
   LogOut,
 } from "lucide-react";
+import briahLogo from "@/assets/briah-logo.png";
 import { getAdminSession, signOutAdmin } from "@/lib/admin-auth";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
@@ -60,9 +61,11 @@ export function AdminShell() {
     return (
       <div className="grid min-h-screen place-items-center bg-background px-6 text-center text-foreground">
         <div>
-          <span className="mx-auto grid h-10 w-10 place-items-center rounded-md bg-primary font-display text-sm font-bold text-primary-foreground">
-            B
-          </span>
+          <img
+            src={briahLogo}
+            alt="Briah's Car Rental"
+            className="mx-auto h-16 w-16 rounded-md object-cover"
+          />
           <p className="mt-4 text-sm text-muted-foreground">Checking admin session...</p>
         </div>
       </div>
@@ -73,14 +76,12 @@ export function AdminShell() {
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-surface/80 backdrop-blur lg:flex">
-        <Link to="/" className="flex h-16 items-center gap-2.5 border-b border-border px-5">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-primary font-display text-sm font-bold text-primary-foreground">
-            B
+        <Link to="/" className="flex h-16 items-center gap-3 border-b border-border px-5">
+          <span className="block h-12 w-28 overflow-hidden rounded-md">
+            <img src={briahLogo} alt="Briah's Car Rental" className="h-full w-full object-cover" />
           </span>
           <div className="leading-tight">
-            <div className="font-display text-sm font-semibold uppercase tracking-wider">
-              Briah's
-            </div>
+            <div className="font-display text-sm font-semibold uppercase tracking-wider">Admin</div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Operations
             </div>
@@ -123,14 +124,14 @@ export function AdminShell() {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/85 px-8 backdrop-blur">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <header className="sticky top-0 z-30 flex min-h-16 items-center gap-4 border-b border-border bg-background/85 px-4 backdrop-blur md:px-8">
+          <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
             <span>Admin</span>
             <span className="text-border">/</span>
-            <span className="text-foreground">{current?.label ?? "Dashboard"}</span>
+            <span className="truncate text-foreground">{current?.label ?? "Dashboard"}</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <label className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground md:flex">
+            <label className="hidden min-h-11 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm text-muted-foreground md:flex">
               <Search className="h-4 w-4" />
               <input
                 className="w-56 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
@@ -140,7 +141,8 @@ export function AdminShell() {
             </label>
             <Link
               to={"/admin/notifications" as never}
-              className="relative grid h-9 w-9 place-items-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground"
+              aria-label="Notifications"
+              className="touch-target relative grid place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
             >
               <Bell className="h-4 w-4" />
               <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
@@ -150,7 +152,7 @@ export function AdminShell() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="flex h-9 items-center gap-2 rounded-md border border-border bg-card px-2.5 text-sm hover:bg-secondary"
+              className="touch-target flex items-center gap-2 rounded-md border border-border bg-card px-2.5 text-sm transition-colors hover:bg-secondary"
             >
               <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
                 KI
@@ -161,7 +163,24 @@ export function AdminShell() {
           </div>
         </header>
 
-        <main className="flex-1 px-8 py-8">
+        <nav className="border-b border-border bg-surface/80 px-4 py-3 lg:hidden">
+          <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Admin sections">
+            {nav.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to as never}
+                activeProps={{ className: "bg-primary/10 text-primary border-primary/30" }}
+                activeOptions={n.exact ? { exact: true } : undefined}
+                className="touch-target inline-flex shrink-0 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <n.icon className="h-4 w-4 shrink-0" />
+                <span>{n.label}</span>
+              </Link>
+            ))}
+          </div>
+        </nav>
+
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
           <Outlet />
         </main>
       </div>

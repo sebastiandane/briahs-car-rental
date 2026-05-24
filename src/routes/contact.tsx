@@ -1,9 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Clock, Mail, MapPin, Phone, type LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  type LucideIcon,
+} from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
+
+type ContactErrors = Partial<Record<"name" | "email" | "subject" | "message", string>>;
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -46,6 +58,36 @@ const branches = [
 ];
 
 function ContactPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [errors, setErrors] = useState<ContactErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSent(false);
+
+    const nextErrors = validateContact({ name, email, subject, message });
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error("Please review the highlighted fields.");
+      return;
+    }
+
+    setSubmitting(true);
+    window.setTimeout(() => {
+      setSubmitting(false);
+      setSent(true);
+      toast.success("Message sent", {
+        description: "We'll reply within a few hours.",
+      });
+    }, 650);
+  }
+
   return (
     <div>
       <Header />
@@ -75,53 +117,107 @@ function ContactPage() {
 
       <section className="container-page mt-12 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            toast.success("Message sent - we'll reply within a few hours.");
-          }}
-          className="rounded-xl border border-border bg-card p-6 shadow-soft md:p-8"
+          onSubmit={submit}
+          noValidate
+          className="rounded-xl border border-border bg-card p-5 shadow-soft md:p-8"
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="font-display text-2xl font-semibold">Send us a message</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
                 Share the dates, vehicle type, and pickup branch you have in mind.
               </p>
             </div>
-            <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              Same-day replies
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${
+                sent
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-primary/30 bg-primary/10 text-primary"
+              }`}
+            >
+              {sent ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+              {sent ? "Message sent" : "Same-day replies"}
             </span>
           </div>
 
           <div className="mt-7 grid gap-5 md:grid-cols-2">
-            <Field label="Full name">
-              <input className="input" required />
+            <Field label="Full name" id="contact-name" error={errors.name}>
+              <input
+                id="contact-name"
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setErrors((current) => ({ ...current, name: undefined }));
+                }}
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? "contact-name-error" : undefined}
+                className="input-control"
+                autoComplete="name"
+                required
+              />
             </Field>
-            <Field label="Email">
-              <input type="email" className="input" required />
+            <Field label="Email" id="contact-email" error={errors.email}>
+              <input
+                id="contact-email"
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setErrors((current) => ({ ...current, email: undefined }));
+                }}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? "contact-email-error" : undefined}
+                className="input-control"
+                autoComplete="email"
+                required
+              />
             </Field>
           </div>
 
-          <Field label="Subject" className="mt-5">
+          <Field label="Subject" id="contact-subject" error={errors.subject} className="mt-5">
             <input
-              className="input"
+              id="contact-subject"
+              value={subject}
+              onChange={(event) => {
+                setSubject(event.target.value);
+                setErrors((current) => ({ ...current, subject: undefined }));
+              }}
+              aria-invalid={Boolean(errors.subject)}
+              aria-describedby={errors.subject ? "contact-subject-error" : undefined}
+              className="input-control"
               placeholder="Booking question, branch pickup, or pricing"
               required
             />
           </Field>
 
-          <Field label="Message" className="mt-5">
+          <Field label="Message" id="contact-message" error={errors.message} className="mt-5">
             <textarea
+              id="contact-message"
               rows={6}
-              className="input !h-auto py-3"
+              value={message}
+              onChange={(event) => {
+                setMessage(event.target.value);
+                setErrors((current) => ({ ...current, message: undefined }));
+              }}
+              aria-invalid={Boolean(errors.message)}
+              aria-describedby={errors.message ? "contact-message-error" : undefined}
+              className="input-control h-auto py-3 leading-6"
               placeholder="How can we help?"
               required
             />
           </Field>
 
-          <button className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            Send message
-            <ArrowRight className="h-4 w-4" />
+          <button
+            type="submit"
+            disabled={submitting}
+            className="touch-target mt-6 inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowRight className="h-4 w-4" />
+            )}
+            {submitting ? "Sending message..." : "Send message"}
           </button>
         </form>
 
@@ -143,7 +239,7 @@ function ContactPage() {
                       <p className="mt-1 text-sm leading-6 text-muted-foreground">
                         {branch.address}
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">{branch.note}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{branch.note}</p>
                     </div>
                   </div>
                 </div>
@@ -162,26 +258,6 @@ function ContactPage() {
       </section>
 
       <Footer />
-
-      <style>{`
-        .input {
-          width: 100%;
-          height: 2.75rem;
-          border-radius: 0.5rem;
-          border: 1px solid var(--color-border);
-          background: var(--color-background);
-          padding: 0 0.875rem;
-          font-size: 0.875rem;
-          color: var(--color-foreground);
-          outline: none;
-          transition: border-color .15s, box-shadow .15s;
-        }
-        .input::placeholder { color: var(--color-muted-foreground); }
-        .input:focus {
-          border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
-        }
-      `}</style>
     </div>
   );
 }
@@ -204,7 +280,9 @@ function ContactCard({
       </span>
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-foreground">{label}</span>
-        <span className="mt-1 block text-sm leading-5 text-muted-foreground">{value}</span>
+        <span className="mt-1 block break-words text-sm leading-5 text-muted-foreground">
+          {value}
+        </span>
       </span>
     </>
   );
@@ -225,17 +303,51 @@ function ContactCard({
 
 function Field({
   label,
+  id,
+  error,
   className = "",
   children,
 }: {
   label: string;
+  id: string;
+  error?: string;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <label className={`block ${className}`}>
+    <label className={`block ${className}`} htmlFor={id}>
       <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
       {children}
+      {error && (
+        <span
+          id={`${id}-error`}
+          className="mt-1.5 flex items-start gap-1.5 text-xs leading-5 text-rose-300"
+        >
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {error}
+        </span>
+      )}
     </label>
   );
+}
+
+function validateContact({
+  name,
+  email,
+  subject,
+  message,
+}: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  const nextErrors: ContactErrors = {};
+
+  if (!name.trim()) nextErrors.name = "Enter your full name.";
+  if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = "Enter a valid email address.";
+  if (!subject.trim()) nextErrors.subject = "Add a short subject.";
+  if (message.trim().length < 10) nextErrors.message = "Tell us a little more so we can help.";
+
+  return nextErrors;
 }

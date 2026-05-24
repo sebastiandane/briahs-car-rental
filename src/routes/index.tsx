@@ -170,16 +170,17 @@ function Home() {
           {/* Search bar */}
           <form
             onSubmit={handleSearch}
-            className="mx-auto mt-10 max-w-3xl rounded-3xl border border-white/10 bg-card p-2 shadow-card md:rounded-full"
+            className="mx-auto mt-10 max-w-3xl rounded-xl border border-white/10 bg-card p-2 shadow-card md:rounded-full"
           >
             <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-[1.2fr_1fr_1fr_auto]">
-              <label className="flex items-center gap-2 rounded-2xl px-4 py-2 text-left text-foreground hover:bg-secondary md:rounded-full">
+              <label className="flex min-h-14 items-center gap-2 rounded-xl px-4 py-2 text-left text-foreground transition-colors hover:bg-secondary focus-within:bg-secondary md:rounded-full">
                 <MapPin className="h-4 w-4 text-primary" />
                 <span className="min-w-0 flex-1 text-xs">
                   <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
                     Pickup
                   </span>
                   <select
+                    aria-label="Pickup branch"
                     value={pickupBranch}
                     onChange={(event) =>
                       setPickupBranch(event.target.value as (typeof pickupBranches)[number])
@@ -194,13 +195,14 @@ function Home() {
                   </select>
                 </span>
               </label>
-              <label className="flex items-center gap-2 rounded-2xl px-4 py-2 text-left text-foreground hover:bg-secondary md:rounded-full">
+              <label className="flex min-h-14 items-center gap-2 rounded-xl px-4 py-2 text-left text-foreground transition-colors hover:bg-secondary focus-within:bg-secondary md:rounded-full">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="min-w-0 flex-1 text-xs">
                   <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
                     When
                   </span>
                   <input
+                    aria-label="Pickup date"
                     type="date"
                     value={pickupDate}
                     onChange={(event) => setPickupDate(event.target.value)}
@@ -209,13 +211,14 @@ function Home() {
                   />
                 </span>
               </label>
-              <label className="flex items-center gap-2 rounded-2xl px-4 py-2 text-left text-foreground hover:bg-secondary md:rounded-full">
+              <label className="flex min-h-14 items-center gap-2 rounded-xl px-4 py-2 text-left text-foreground transition-colors hover:bg-secondary focus-within:bg-secondary md:rounded-full">
                 <Car className="h-4 w-4 text-primary" />
                 <span className="min-w-0 flex-1 text-xs">
                   <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
                     Vehicle
                   </span>
                   <select
+                    aria-label="Vehicle category"
                     value={vehicleCategory}
                     onChange={(event) =>
                       setVehicleCategory(event.target.value as (typeof vehicleCategories)[number])
@@ -232,7 +235,7 @@ function Home() {
               </label>
               <button
                 type="submit"
-                className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                className="touch-target inline-flex items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Search cars
               </button>
@@ -255,7 +258,7 @@ function Home() {
 
       {/* TIERS / PRICING STRIP */}
       <section className="container-page -mt-16 relative z-10">
-        <div className="grid gap-4 rounded-2xl border border-border bg-card p-6 shadow-card md:grid-cols-4">
+        <div className="grid gap-4 rounded-xl border border-border bg-card p-5 shadow-card md:grid-cols-4 md:p-6">
           {tiers.map((t) => (
             <div
               key={t.label}
@@ -359,7 +362,7 @@ function Home() {
           ))}
         </div>
 
-        <div className="mt-8 rounded-2xl border border-primary/25 bg-gradient-to-r from-card to-primary/10 p-6 text-sm text-muted-foreground">
+        <div className="mt-8 rounded-xl border border-primary/25 bg-gradient-to-r from-card to-primary/10 p-6 text-sm leading-6 text-muted-foreground">
           <span className="font-semibold text-foreground">Requirements:</span> valid LTO driver's
           license, one valid government ID, and a refundable security deposit at pickup.
         </div>
@@ -459,10 +462,10 @@ function Home() {
             </Link>
           </div>
 
-          <div className="divide-y divide-border rounded-2xl border border-border bg-card">
+          <div className="divide-y divide-border rounded-xl border border-border bg-card">
             {faqs.map((f) => (
               <details key={f.q} className="group p-5 [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex cursor-pointer items-center justify-between gap-4">
+                <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-4 rounded-md">
                   <span className="font-medium">{f.q}</span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
                 </summary>
@@ -475,8 +478,7 @@ function Home() {
 
       {/* CTA */}
       <section className="container-page mt-28">
-        <div className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-card via-background to-card px-8 py-16 text-center shadow-card md:px-16">
-          <div className="absolute -top-32 left-1/2 -z-0 h-64 w-[600px] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+        <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-br from-card via-background to-card px-6 py-14 text-center shadow-card md:px-16 md:py-16">
           <h2 className="relative mx-auto max-w-2xl font-display text-3xl font-semibold md:text-4xl">
             Ready to hit the road?
           </h2>
@@ -487,13 +489,13 @@ function Home() {
           <div className="relative mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/vehicles"
-              className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              className="touch-target inline-flex items-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Browse the fleet
             </Link>
             <Link
               to="/booking"
-              className="inline-flex h-11 items-center rounded-full border border-primary/40 px-6 text-sm font-semibold text-foreground hover:bg-primary/10"
+              className="touch-target inline-flex items-center rounded-full border border-primary/40 px-6 text-sm font-semibold text-foreground transition-colors hover:bg-primary/10"
             >
               Start a booking
             </Link>

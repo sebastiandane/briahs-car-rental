@@ -6,7 +6,7 @@ const ADMIN_USERS = [
     email: "admin@briahs.local",
     password: "admin123",
     name: "Karla Ignacio",
-    role: "Owner",
+    role: "Admin",
   },
 ] as const;
 
