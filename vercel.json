@@ -1,0 +1,16 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "devCommand": "npm run dev",
+  "framework": "tanstack-start",
+  "rewrites": [
+    {
+      "source": "/:path((?!.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "regions": ["iad1"]
+}
