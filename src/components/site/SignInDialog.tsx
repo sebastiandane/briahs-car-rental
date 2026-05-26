@@ -10,7 +10,6 @@ import {
   Mail,
   Phone,
   UserRound,
-  Users,
   X,
 } from "lucide-react";
 import {
@@ -25,7 +24,6 @@ import { getAdminSession, signInAdmin } from "@/lib/admin-auth";
 import { setCustomerSession, type CustomerSession } from "@/lib/customer-auth";
 
 type AuthMode = "sign-in" | "sign-up";
-type UserType = "Business Owner" | "Administrator / Staff" | "Customers / Renters";
 
 type LocalSignupRecord = {
   user_id: number;
@@ -60,11 +58,7 @@ const providerOptions: { provider: AuthProvider; label: string; icon: typeof Chr
   { provider: "apple", label: "Continue with Apple", icon: Apple },
 ];
 
-const userTypeOptions: UserType[] = [
-  "Customers / Renters",
-  "Administrator / Staff",
-  "Business Owner",
-];
+const SIGNUP_USER_TYPE = "Customers / Renters" as const;
 
 export function SignInDialog({
   open,
@@ -362,7 +356,6 @@ function SignUpForm({
   onProviderContinue: (provider: AuthProvider) => Promise<void> | void;
 }) {
   const fullNameRef = useRef<HTMLInputElement>(null);
-  const [userType, setUserType] = useState<UserType>("Customers / Renters");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -405,7 +398,7 @@ function SignUpForm({
     try {
       if (hasApiSignup()) {
         const result = await signUpWithCredentialsApi({
-          user_type: userType,
+          user_type: SIGNUP_USER_TYPE,
           full_name: trimmedName,
           email: trimmedEmail,
           phone_number: trimmedPhone,
@@ -421,7 +414,7 @@ function SignUpForm({
         setNotice("Account created. You can now sign in.");
       } else {
         const didSave = saveLocalPrototypeSignup({
-          user_type: userType,
+          user_type: SIGNUP_USER_TYPE,
           full_name: trimmedName,
           email: trimmedEmail,
           phone_number: trimmedPhone,
@@ -470,24 +463,6 @@ function SignUpForm({
       </div>
 
       <form onSubmit={handleSignup} className="mt-5 space-y-4">
-        <label className="block">
-          <span className="text-sm font-medium text-foreground">User type</span>
-          <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <select
-              value={userType}
-              onChange={(event) => setUserType(event.target.value as UserType)}
-              className="min-w-0 flex-1 bg-transparent text-foreground outline-none"
-            >
-              {userTypeOptions.map((option) => (
-                <option key={option} value={option} className="bg-card text-foreground">
-                  {option}
-                </option>
-              ))}
-            </select>
-          </span>
-        </label>
-
         <label className="block">
           <span className="text-sm font-medium text-foreground">Full name</span>
           <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
