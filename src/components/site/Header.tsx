@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
-import briahLogo from "@/assets/briah-logo.png";
 import { SignInDialog } from "@/components/site/SignInDialog";
 
 const navLinks = [
@@ -27,14 +26,10 @@ export function Header() {
           <Link
             to="/"
             onClick={() => setMenuOpen(false)}
-            className="flex min-w-0 items-center rounded-md"
+            className="flex min-w-0 items-center rounded-md text-foreground transition-colors hover:text-primary"
           >
-            <span className="block h-12 w-36 overflow-hidden rounded-md sm:w-40">
-              <img
-                src={briahLogo}
-                alt="Briah's Car Rental"
-                className="h-full w-full object-cover"
-              />
+            <span className="truncate font-display text-base font-semibold tracking-tight sm:text-lg">
+              Briah&apos;s Car Rental
             </span>
           </Link>
 

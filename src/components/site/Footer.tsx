@@ -1,17 +1,17 @@
 import { Link } from "@tanstack/react-router";
 import { Mail, MapPin, Phone } from "lucide-react";
-import briahLogo from "@/assets/briah-logo.png";
 
 export function Footer() {
   return (
     <footer className="mt-24 border-t border-border bg-surface text-foreground">
       <div className="container-page grid gap-12 py-16 md:grid-cols-4">
         <div className="md:col-span-1">
-          <img
-            src={briahLogo}
-            alt="Briah's Car Rental"
-            className="h-20 w-56 rounded-md object-cover"
-          />
+          <Link
+            to="/"
+            className="inline-flex max-w-full font-display text-lg font-semibold tracking-tight text-foreground transition-colors hover:text-primary"
+          >
+            <span className="truncate">Briah&apos;s Car Rental</span>
+          </Link>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
             Premium yet affordable car rentals across Luzon. Self-drive or with a trusted driver —
             your journey, your choice.
