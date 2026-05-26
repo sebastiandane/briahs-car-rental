@@ -4,9 +4,9 @@ export type AdminRole = "Business Owner" | "Administrator / Staff";
 
 const ADMIN_USERS = [
   {
-    username: "admin",
-    email: "admin@briahs.local",
-    password: "admin123",
+    username: "owner",
+    email: "owner@briahs.local",
+    password: "owner123",
     name: "Karla Ignacio",
     role: "Business Owner",
   },

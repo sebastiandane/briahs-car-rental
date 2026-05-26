@@ -1,22 +1,34 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { SignInDialog } from "@/components/site/SignInDialog";
-
-const navLinks = [
-  { to: "/", label: "Home", exact: true },
-  { to: "/vehicles", label: "Vehicles" },
-  { to: "/booking", label: "Booking" },
-  { to: "/contact", label: "Contact" },
-] as const;
+import { clearCustomerSession, getCustomerSession } from "@/lib/customer-auth";
 
 export function Header() {
+  const navigate = useNavigate();
   const [signInOpen, setSignInOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const customerSession = getCustomerSession();
+  const showCustomerDashboardLink = customerSession != null && pathname !== "/";
+  const navLinks = [
+    { to: "/", label: "Home", exact: true },
+    { to: "/vehicles", label: "Vehicles" },
+    { to: "/booking", label: "Booking" },
+    { to: "/contact", label: "Contact" },
+    ...(showCustomerDashboardLink ? [{ to: "/customer", label: "Customer Dashboard" }] : []),
+  ] as const;
 
   function openSignIn() {
     setMenuOpen(false);
     setSignInOpen(true);
+  }
+
+  function signOut() {
+    clearCustomerSession();
+    setMenuOpen(false);
+    setSignInOpen(false);
+    void navigate({ to: "/", replace: true });
   }
 
   return (
@@ -48,13 +60,23 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={openSignIn}
-              className="touch-target hidden items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:inline-flex"
-            >
-              Sign In
-            </button>
+            {customerSession ? (
+              <button
+                type="button"
+                onClick={signOut}
+                className="touch-target hidden items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:inline-flex"
+              >
+                Sign out
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={openSignIn}
+                className="touch-target hidden items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:inline-flex"
+              >
+                Sign In / Sign Up
+              </button>
+            )}
             <button
               type="button"
               aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
@@ -82,13 +104,23 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              <button
-                type="button"
-                onClick={openSignIn}
-                className="touch-target mt-1 inline-flex w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                Sign In
-              </button>
+              {customerSession ? (
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="touch-target inline-flex w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openSignIn}
+                  className="touch-target inline-flex w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Sign In / Sign Up
+                </button>
+              )}
             </nav>
           </div>
         )}

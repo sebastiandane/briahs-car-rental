@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, User, UserPlus, Users } from "lucide-react";
 import { Badge, Btn, Card, CardHeader, PageHeader } from "@/components/admin/ui";
 import { users } from "@/data/admin";
+import { canAccessPayments, getAdminSession } from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/admin/users")({ component: UsersPage });
 
@@ -42,13 +43,20 @@ const roleSummary = [
 ];
 
 function UsersPage() {
+  const session = getAdminSession();
+  const canManageUsers = canAccessPayments(session?.role);
+
   return (
     <div>
       <PageHeader
         title="Users & roles"
         subtitle="Manage role-based access for owners, staff, and renters."
         actions={
-          <Btn variant="primary">
+          <Btn
+            variant="primary"
+            disabled={!canManageUsers}
+            title={canManageUsers ? "Add user" : "Only admin can add users"}
+          >
             <UserPlus className="h-4 w-4" /> Add user
           </Btn>
         }
@@ -115,7 +123,13 @@ function UsersPage() {
                 </td>
                 <td className="px-5 py-3 text-muted-foreground">2h ago</td>
                 <td className="px-5 py-3 text-right">
-                  <Btn variant="ghost">Edit</Btn>
+                  <Btn
+                    variant="ghost"
+                    disabled={!canManageUsers}
+                    title={canManageUsers ? "Edit user" : "Only admin can edit users"}
+                  >
+                    {canManageUsers ? "Edit" : "View only"}
+                  </Btn>
                 </td>
               </tr>
             ))}

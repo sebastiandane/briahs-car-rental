@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
@@ -13,9 +13,12 @@ import { toast } from "sonner";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
 import { peso, vehicles } from "@/data/vehicles";
+import { CANCELLATION_POLICY, RENTAL_DONTS, RENTAL_DOS } from "@/data/rental-policy";
 
 type Search = { vehicle?: string };
-type BookingErrors = Partial<Record<"pickup" | "dropoff" | "name" | "email" | "phone", string>>;
+type BookingErrors = Partial<
+  Record<"pickup" | "dropoff" | "name" | "email" | "phone" | "terms", string>
+>;
 
 export const Route = createFileRoute("/booking")({
   validateSearch: (s: Record<string, unknown>): Search => ({
@@ -35,6 +38,7 @@ export const Route = createFileRoute("/booking")({
 });
 
 function BookingPage() {
+  const navigate = useNavigate();
   const { vehicle } = Route.useSearch();
   const initial = vehicles.find((v) => v.id === vehicle) ?? vehicles[0];
 
@@ -46,9 +50,15 @@ function BookingPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [errors, setErrors] = useState<BookingErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [successNotice, setSuccessNotice] = useState<{
+    vehicleName: string;
+    days: number;
+    total: number;
+  } | null>(null);
 
   const selected = vehicles.find((v) => v.id === vehicleId) ?? initial;
 
@@ -64,7 +74,7 @@ function BookingPage() {
     event.preventDefault();
     setSubmitted(false);
 
-    const nextErrors = validateBooking({ pickup, dropoff, name, email, phone });
+    const nextErrors = validateBooking({ pickup, dropoff, name, email, phone, acceptTerms });
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -76,9 +86,10 @@ function BookingPage() {
     window.setTimeout(() => {
       setSubmitting(false);
       setSubmitted(true);
-      toast.success("Booking request received", {
-        description: `${selected.name} - ${days} day${days > 1 ? "s" : ""} - ${peso(total)}. We'll confirm by email shortly.`,
-      });
+      setSuccessNotice({ vehicleName: selected.name, days, total });
+      window.setTimeout(() => {
+        void navigate({ to: "/customer", hash: "post-booking" });
+      }, 1400);
     }, 650);
   }
 
@@ -265,6 +276,25 @@ function BookingPage() {
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {submitting ? "Sending request..." : "Request booking"}
           </button>
+          <label className="mt-3 block text-xs text-muted-foreground">
+            <span className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(event) => {
+                  setAcceptTerms(event.target.checked);
+                  setErrors((current) => ({ ...current, terms: undefined }));
+                }}
+                aria-invalid={Boolean(errors.terms)}
+                className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-primary"
+              />
+              <span>
+                I agree to the rental do&apos;s and don&apos;ts, required documents, and
+                cancellation policy.
+              </span>
+            </span>
+            {errors.terms && <span className="mt-1.5 block text-rose-300">{errors.terms}</span>}
+          </label>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             You won't be charged yet - we'll confirm availability first.
           </p>
@@ -322,13 +352,57 @@ function BookingPage() {
             <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted-foreground">
               <li>Comprehensive insurance</li>
               <li>24/7 roadside assistance</li>
-              <li>Free cancellation up to 24h before pickup</li>
+              <li>Reservation payments are non-refundable once paid.</li>
             </ul>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-5 text-sm">
+            <div className="font-medium text-foreground">Rental do&apos;s and don&apos;ts</div>
+            <div className="mt-3 grid gap-4">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+                  Do&apos;s
+                </div>
+                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
+                  {RENTAL_DOS.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-400">
+                  Don&apos;ts
+                </div>
+                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
+                  {RENTAL_DONTS.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-4 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+              {CANCELLATION_POLICY}
+            </div>
           </div>
         </aside>
       </section>
 
       <Footer />
+
+      {successNotice && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4">
+          <div className="w-[min(92vw,720px)] rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-6 text-center shadow-card backdrop-blur-sm">
+            <p className="font-display text-3xl font-semibold text-emerald-200">
+              Booking request received
+            </p>
+            <p className="mt-2 text-base text-emerald-100/90">
+              {successNotice.vehicleName} - {successNotice.days} day
+              {successNotice.days > 1 ? "s" : ""} - {peso(successNotice.total)}. We&apos;ll confirm
+              by email shortly.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -379,12 +453,14 @@ function validateBooking({
   name,
   email,
   phone,
+  acceptTerms,
 }: {
   pickup: string;
   dropoff: string;
   name: string;
   email: string;
   phone: string;
+  acceptTerms: boolean;
 }) {
   const nextErrors: BookingErrors = {};
 
@@ -396,6 +472,7 @@ function validateBooking({
   if (!name.trim()) nextErrors.name = "Enter your full name.";
   if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = "Enter a valid email address.";
   if (phone.replace(/\D/g, "").length < 10) nextErrors.phone = "Enter a valid phone number.";
+  if (!acceptTerms) nextErrors.terms = "Please accept the rental policies to continue.";
 
   return nextErrors;
 }

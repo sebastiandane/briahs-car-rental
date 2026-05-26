@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Calendar,
@@ -18,7 +18,18 @@ import { peso, vehicles } from "@/data/vehicles";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getCustomerSession } from "@/lib/customer-auth";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/customer-landing")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+
+    if (getAdminSession()) {
+      throw redirect({ to: "/admin" });
+    }
+
+    if (!getCustomerSession()) {
+      throw redirect({ to: "/" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Briah's Car Rental — Affordable Rentals Across Luzon" },
@@ -31,7 +42,7 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Reliable, affordable car rentals across Luzon." },
       { property: "og:type", content: "website" },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: "/customer-landing" }],
   }),
   component: Home,
 });
@@ -130,13 +141,13 @@ function Home() {
   const minPickupDate = getTodayInputValue();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.has("public")) return;
+    if (getAdminSession()) {
+      void navigate({ to: "/admin", replace: true });
+      return;
     }
-    if (getAdminSession()) return;
-    if (getCustomerSession()) {
-      void navigate({ to: "/customer-landing", replace: true });
+
+    if (!getCustomerSession()) {
+      void navigate({ to: "/", replace: true });
     }
   }, [navigate]);
 

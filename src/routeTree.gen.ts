@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VehiclesRouteImport } from './routes/vehicles'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as CustomerLandingRouteImport } from './routes/customer-landing'
+import { Route as CustomerRouteImport } from './routes/customer'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as BookingRouteImport } from './routes/booking'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -37,6 +39,16 @@ const VehiclesRoute = VehiclesRouteImport.update({
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerLandingRoute = CustomerLandingRouteImport.update({
+  id: '/customer-landing',
+  path: '/customer-landing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerRoute = CustomerRouteImport.update({
+  id: '/customer',
+  path: '/customer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -130,6 +142,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/booking': typeof BookingRoute
   '/contact': typeof ContactRoute
+  '/customer': typeof CustomerRoute
+  '/customer-landing': typeof CustomerLandingRoute
   '/sign-in': typeof SignInRoute
   '/vehicles': typeof VehiclesRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -150,6 +164,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/booking': typeof BookingRoute
   '/contact': typeof ContactRoute
+  '/customer': typeof CustomerRoute
+  '/customer-landing': typeof CustomerLandingRoute
   '/sign-in': typeof SignInRoute
   '/vehicles': typeof VehiclesRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -172,6 +188,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/booking': typeof BookingRoute
   '/contact': typeof ContactRoute
+  '/customer': typeof CustomerRoute
+  '/customer-landing': typeof CustomerLandingRoute
   '/sign-in': typeof SignInRoute
   '/vehicles': typeof VehiclesRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -195,6 +213,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/booking'
     | '/contact'
+    | '/customer'
+    | '/customer-landing'
     | '/sign-in'
     | '/vehicles'
     | '/admin/bookings'
@@ -215,6 +235,8 @@ export interface FileRouteTypes {
     | '/'
     | '/booking'
     | '/contact'
+    | '/customer'
+    | '/customer-landing'
     | '/sign-in'
     | '/vehicles'
     | '/admin/bookings'
@@ -236,6 +258,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/booking'
     | '/contact'
+    | '/customer'
+    | '/customer-landing'
     | '/sign-in'
     | '/vehicles'
     | '/admin/bookings'
@@ -258,6 +282,8 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   BookingRoute: typeof BookingRoute
   ContactRoute: typeof ContactRoute
+  CustomerRoute: typeof CustomerRoute
+  CustomerLandingRoute: typeof CustomerLandingRoute
   SignInRoute: typeof SignInRoute
   VehiclesRoute: typeof VehiclesRoute
 }
@@ -276,6 +302,20 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer-landing': {
+      id: '/customer-landing'
+      path: '/customer-landing'
+      fullPath: '/customer-landing'
+      preLoaderRoute: typeof CustomerLandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer': {
+      id: '/customer'
+      path: '/customer'
+      fullPath: '/customer'
+      preLoaderRoute: typeof CustomerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -439,6 +479,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   BookingRoute: BookingRoute,
   ContactRoute: ContactRoute,
+  CustomerRoute: CustomerRoute,
+  CustomerLandingRoute: CustomerLandingRoute,
   SignInRoute: SignInRoute,
   VehiclesRoute: VehiclesRoute,
 }

@@ -1,40 +1,100 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Plus, LayoutGrid, List, Wrench } from "lucide-react";
+import {
+  MaintenanceRecordDialog,
+  type MaintenanceRecordDraft,
+} from "@/components/admin/MaintenanceRecordDialog";
 import { Badge, Btn, Card, PageHeader, TInput, TSelect, Toolbar } from "@/components/admin/ui";
 import { fleet, peso, type VehicleStatus } from "@/data/admin";
 
 export const Route = createFileRoute("/admin/fleet")({ component: FleetPage });
 
-const statuses: (VehicleStatus | "All")[] = ["All", "Available", "Reserved", "Rented", "Maintenance", "Inactive"];
+const statuses: (VehicleStatus | "All")[] = [
+  "All",
+  "Available",
+  "Reserved",
+  "Rented",
+  "Maintenance",
+  "Inactive",
+];
 
 function FleetPage() {
   const [view, setView] = useState<"grid" | "table">("grid");
   const [status, setStatus] = useState<(typeof statuses)[number]>("All");
   const [q, setQ] = useState("");
+  const [serviceModalOpen, setServiceModalOpen] = useState(false);
+  const [draft, setDraft] = useState<MaintenanceRecordDraft>(() => createDraftFromVehicle(0));
 
   const rows = fleet.filter((v) => {
     if (status !== "All" && v.status !== status) return false;
-    if (q && ![v.name, v.plate, v.category].join(" ").toLowerCase().includes(q.toLowerCase())) return false;
+    if (q && ![v.name, v.plate, v.category].join(" ").toLowerCase().includes(q.toLowerCase()))
+      return false;
     return true;
   });
+
+  function createDraftFromVehicle(index = 0): MaintenanceRecordDraft {
+    const vehicle = fleet[index] ?? fleet[0];
+    const numericId = Number(vehicle?.id?.replace(/\D/g, "") || 1001);
+
+    return {
+      maintenance_id: String(numericId),
+      vehicle_id: vehicle?.id?.replace(/\D/g, "") || "1",
+      maintenance_type: "Preventive Maintenance",
+      description: `${vehicle?.name ?? ""} (${vehicle?.plate ?? ""})`,
+      maintenance_status: "Scheduled",
+      scheduled_date: new Date().toISOString().slice(0, 10),
+      completed_date: "",
+      cost: "",
+      performed_by: "",
+      recorded_by: "1",
+      created_at: new Date().toISOString(),
+    };
+  }
+
+  function openServiceModalByVehicle(vehicleId: string) {
+    const index = fleet.findIndex((vehicle) => vehicle.id === vehicleId);
+    setDraft(createDraftFromVehicle(index >= 0 ? index : 0));
+    setServiceModalOpen(true);
+  }
 
   return (
     <div>
       <PageHeader
         title="Fleet management"
         subtitle="56 total vehicles across two branches — track condition, assignment, and pricing."
-        actions={<Btn variant="primary"><Plus className="h-4 w-4" /> Add vehicle</Btn>}
+        actions={
+          <Btn variant="primary">
+            <Plus className="h-4 w-4" /> Add vehicle
+          </Btn>
+        }
       />
 
       <Toolbar>
-        <TInput placeholder="Search vehicle or plate…" value={q} onChange={(e) => setQ(e.target.value)} className="min-w-72" />
+        <TInput
+          placeholder="Search vehicle or plate…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="min-w-72"
+        />
         <TSelect value={status} onChange={(e) => setStatus(e.target.value as never)}>
-          {statuses.map((s) => <option key={s}>{s}</option>)}
+          {statuses.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
         </TSelect>
         <div className="ml-auto flex items-center gap-1 rounded-md border border-border bg-background p-0.5">
-          <button onClick={() => setView("grid")} className={`grid h-7 w-7 place-items-center rounded ${view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><LayoutGrid className="h-3.5 w-3.5" /></button>
-          <button onClick={() => setView("table")} className={`grid h-7 w-7 place-items-center rounded ${view === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><List className="h-3.5 w-3.5" /></button>
+          <button
+            onClick={() => setView("grid")}
+            className={`grid h-7 w-7 place-items-center rounded ${view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => setView("table")}
+            className={`grid h-7 w-7 place-items-center rounded ${view === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+          >
+            <List className="h-3.5 w-3.5" />
+          </button>
         </div>
       </Toolbar>
 
@@ -44,8 +104,12 @@ function FleetPage() {
             <Card key={v.id} className="overflow-hidden">
               <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-secondary to-background">
                 <div className="text-center">
-                  <div className="font-display text-3xl font-bold text-primary/70">{v.category[0]}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{v.category}</div>
+                  <div className="font-display text-3xl font-bold text-primary/70">
+                    {v.category[0]}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {v.category}
+                  </div>
                 </div>
               </div>
               <div className="p-4">
@@ -57,18 +121,29 @@ function FleetPage() {
                   <Badge>{v.status}</Badge>
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-y-1.5 text-xs">
-                  <dt className="text-muted-foreground">Branch</dt><dd className="text-right">{v.branch.split(",")[0]}</dd>
-                  <dt className="text-muted-foreground">Transmission</dt><dd className="text-right">{v.transmission}</dd>
-                  <dt className="text-muted-foreground">Seats</dt><dd className="text-right">{v.seats}</dd>
-                  <dt className="text-muted-foreground">Condition</dt><dd className="text-right">{v.condition}</dd>
+                  <dt className="text-muted-foreground">Branch</dt>
+                  <dd className="text-right">{v.branch.split(",")[0]}</dd>
+                  <dt className="text-muted-foreground">Transmission</dt>
+                  <dd className="text-right">{v.transmission}</dd>
+                  <dt className="text-muted-foreground">Seats</dt>
+                  <dd className="text-right">{v.seats}</dd>
+                  <dt className="text-muted-foreground">Condition</dt>
+                  <dd className="text-right">{v.condition}</dd>
                 </dl>
                 <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
                   <div>
-                    <div className="font-display text-lg font-semibold text-primary">{peso(v.pricePerDay)}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">per day</div>
+                    <div className="font-display text-lg font-semibold text-primary">
+                      {peso(v.pricePerDay)}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      per day
+                    </div>
                   </div>
-                  <button className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary">
-                    <Wrench className="h-3.5 w-3.5" /> Service
+                  <button
+                    onClick={() => openServiceModalByVehicle(v.id)}
+                    className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary"
+                  >
+                    <Wrench className="h-3.5 w-3.5" /> Service now
                   </button>
                 </div>
               </div>
@@ -86,23 +161,45 @@ function FleetPage() {
                 <th className="px-4 py-3 text-left font-semibold">Condition</th>
                 <th className="px-4 py-3 text-right font-semibold">Rate / day</th>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
+                <th className="px-4 py-3 text-right font-semibold">Action</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((v) => (
                 <tr key={v.id} className="border-b border-border/60 hover:bg-secondary/40">
-                  <td className="px-4 py-3"><div className="font-medium">{v.name}</div><div className="text-xs text-muted-foreground">{v.category} • {v.transmission} • {v.seats} seats</div></td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{v.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {v.category} • {v.transmission} • {v.seats} seats
+                    </div>
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs">{v.plate}</td>
                   <td className="px-4 py-3 text-muted-foreground">{v.branch}</td>
                   <td className="px-4 py-3">{v.condition}</td>
-                  <td className="px-4 py-3 text-right font-display font-semibold">{peso(v.pricePerDay)}</td>
-                  <td className="px-4 py-3"><Badge>{v.status}</Badge></td>
+                  <td className="px-4 py-3 text-right font-display font-semibold">
+                    {peso(v.pricePerDay)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge>{v.status}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Btn variant="primary" onClick={() => openServiceModalByVehicle(v.id)}>
+                      Service now
+                    </Btn>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Card>
       )}
+
+      <MaintenanceRecordDialog
+        open={serviceModalOpen}
+        draft={draft}
+        onDraftChange={setDraft}
+        onOpenChange={setServiceModalOpen}
+      />
     </div>
   );
 }
