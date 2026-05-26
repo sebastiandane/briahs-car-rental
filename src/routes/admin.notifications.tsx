@@ -200,7 +200,7 @@ function NotificationRow({
               )}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {notification.category} â€¢ {notification.when}
+              {notification.category} • {notification.when}
             </p>
           </div>
         </div>
