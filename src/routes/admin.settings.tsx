@@ -57,10 +57,7 @@ function SettingsPage() {
             <CardHeader title="Integrations" />
             <ul className="divide-y divide-border">
               {[
-                { name: "GCash payments", status: "Connected" },
-                { name: "BPI deposit reconciliation", status: "Connected" },
-                { name: "Twilio SMS reminders", status: "Connected" },
-                { name: "Google Maps fleet tracking", status: "Not connected" },
+                { name: "Waze API", status: "Not connected" },
               ].map((i) => (
                 <li key={i.name} className="flex items-center justify-between px-5 py-4">
                   <div>

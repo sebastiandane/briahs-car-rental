@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertCircle, ArrowRight, LockKeyhole, UserRound, X } from "lucide-react";
+import { AlertCircle, Apple, ArrowRight, Chrome, Facebook, LockKeyhole, UserRound, X } from "lucide-react";
+import { continueWithProvider, hasApiCredentialLogin, signInWithCredentialsApi, type AuthProvider } from "@/lib/auth-integration";
 import { getAdminSession, signInAdmin } from "@/lib/admin-auth";
 
 export function SignInDialog({
@@ -60,18 +61,28 @@ export function SignInDialog({
   );
 }
 
+const providerOptions: { provider: AuthProvider; label: string; icon: typeof Chrome }[] = [
+  { provider: "google", label: "Continue with Google", icon: Chrome },
+  { provider: "facebook", label: "Continue with Facebook", icon: Facebook },
+  { provider: "apple", label: "Continue with Apple", icon: Apple },
+];
+
 export function SignInForm({
   closeOnSuccess = false,
   onSuccess,
+  onProviderContinue,
 }: {
   closeOnSuccess?: boolean;
   onSuccess?: () => void;
+  onProviderContinue?: (provider: AuthProvider) => Promise<void> | void;
 }) {
   const navigate = useNavigate();
   const identifierRef = useRef<HTMLInputElement>(null);
   const [identifier, setIdentifier] = useState("admin");
   const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [providerLoading, setProviderLoading] = useState<AuthProvider | null>(null);
 
   useEffect(() => {
     identifierRef.current?.focus();
@@ -83,20 +94,56 @@ export function SignInForm({
     }
   }, [navigate]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setSubmitting(true);
 
-    if (!signInAdmin(identifier, password)) {
-      setError("Use admin / admin123 to open the local admin dashboard.");
-      return;
+    try {
+      const trimmedIdentifier = identifier.trim();
+
+      if (hasApiCredentialLogin()) {
+        const result = await signInWithCredentialsApi({
+          identifier: trimmedIdentifier,
+          password,
+        });
+
+        if (!result.ok) {
+          setError(result.message ?? "Unable to sign in.");
+          return;
+        }
+      } else if (!signInAdmin(trimmedIdentifier, password)) {
+        setError("Use admin / admin123 (owner) or staff / staff123 (staff).");
+        return;
+      }
+
+      if (closeOnSuccess) {
+        onSuccess?.();
+      }
+
+      void navigate({ to: "/admin", replace: true });
+    } catch {
+      setError("Sign-in request failed. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
+  }
 
-    if (closeOnSuccess) {
-      onSuccess?.();
+  async function handleProviderContinue(provider: AuthProvider) {
+    setError("");
+    setProviderLoading(provider);
+
+    try {
+      if (onProviderContinue) {
+        await onProviderContinue(provider);
+      } else {
+        continueWithProvider(provider);
+      }
+    } catch {
+      setError(`Unable to continue with ${provider}.`);
+    } finally {
+      setProviderLoading(null);
     }
-
-    void navigate({ to: "/admin", replace: true });
   }
 
   return (
@@ -106,15 +153,11 @@ export function SignInForm({
           Admin access
         </p>
         <h2 id="admin-sign-in-title" className="mt-3 font-display text-2xl font-semibold">
-          Sign in to admin
+          Sign in to dashboard
         </h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Use <span className="text-foreground">admin</span> and{" "}
-          <span className="text-foreground">admin123</span> for local access.
-        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         <label className="block">
           <span className="text-sm font-medium text-foreground">Username or email</span>
           <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
@@ -161,12 +204,34 @@ export function SignInForm({
 
         <button
           type="submit"
-          className="touch-target inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          disabled={submitting || providerLoading !== null}
+          className="touch-target inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Sign in
+          {submitting ? "Signing in..." : "Sign in"}
           <ArrowRight className="h-4 w-4" />
         </button>
       </form>
+
+      <div className="my-4 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />
+        <span>or continue with</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <div className="space-y-2">
+        {providerOptions.map((option) => (
+          <button
+            key={option.provider}
+            type="button"
+            onClick={() => void handleProviderContinue(option.provider)}
+            disabled={submitting || providerLoading !== null}
+            className="touch-target inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-background text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option.icon className="h-4 w-4" />
+            {providerLoading === option.provider ? `Connecting ${option.provider}...` : option.label}
+          </button>
+        ))}
+      </div>
     </>
   );
 }

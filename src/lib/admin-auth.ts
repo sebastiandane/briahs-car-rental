@@ -1,21 +1,30 @@
 const ADMIN_SESSION_KEY = "briahs-admin-session";
 
+export type AdminRole = "Business Owner" | "Administrator / Staff";
+
 const ADMIN_USERS = [
   {
     username: "admin",
     email: "admin@briahs.local",
     password: "admin123",
     name: "Karla Ignacio",
-    role: "Admin",
+    role: "Business Owner",
+  },
+  {
+    username: "staff",
+    email: "staff@briahs.local",
+    password: "staff123",
+    name: "Mike Rivera",
+    role: "Administrator / Staff",
   },
 ] as const;
 
 type AdminUser = (typeof ADMIN_USERS)[number];
 
-type AdminSession = {
+export type AdminSession = {
   username: AdminUser["username"];
   name: AdminUser["name"];
-  role: AdminUser["role"];
+  role: AdminRole;
   signedInAt: string;
 };
 
@@ -72,4 +81,12 @@ export function isAdminSignedIn() {
 export function signOutAdmin() {
   if (!hasBrowserStorage()) return;
   window.localStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
+export function isStaffRole(role: AdminRole | undefined | null) {
+  return role === "Administrator / Staff";
+}
+
+export function canAccessPayments(role: AdminRole | undefined | null) {
+  return role === "Business Owner";
 }

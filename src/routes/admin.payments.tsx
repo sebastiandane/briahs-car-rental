@@ -2,15 +2,31 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Banknote, Check, ImageIcon, X } from "lucide-react";
 import { Badge, Btn, Card, CardHeader, KPI, PageHeader } from "@/components/admin/ui";
 import { payments, peso } from "@/data/admin";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { canAccessPayments, getAdminSession } from "@/lib/admin-auth";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/payments")({ component: PaymentsPage });
 
 function PaymentsPage() {
+  const navigate = useNavigate();
+  const session = getAdminSession();
+  const canViewPayments = canAccessPayments(session?.role);
   const [selected, setSelected] = useState(payments[2]);
   const pending = payments.filter((p) => p.status === "Pending");
   const totalPaid = payments.filter((p) => p.status === "Paid").reduce((s, p) => s + p.amount, 0);
   const totalPending = pending.reduce((s, p) => s + p.amount, 0);
+
+  useEffect(() => {
+    if (!session) return;
+    if (!canViewPayments) {
+      void navigate({ to: "/admin", replace: true });
+    }
+  }, [canViewPayments, navigate, session]);
+
+  if (!canViewPayments) {
+    return null;
+  }
 
   return (
     <div>

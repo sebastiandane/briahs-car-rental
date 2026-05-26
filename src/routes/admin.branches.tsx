@@ -1,15 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapPin, Plus, TrendingUp } from "lucide-react";
-import { Badge, Btn, Card, CardHeader, PageHeader } from "@/components/admin/ui";
+import { Badge, Btn, Card, PageHeader } from "@/components/admin/ui";
 import { branchPerformance, peso } from "@/data/admin";
 
 export const Route = createFileRoute("/admin/branches")({ component: BranchesPage });
-
-const expansion = [
-  { city: "Pampanga (Angeles)", stage: "Site survey",     eta: "Q3 2026" },
-  { city: "La Union (San Juan)", stage: "Lease review",   eta: "Q4 2026" },
-  { city: "Batangas (Lipa)",     stage: "Pipeline",       eta: "2027" },
-];
 
 function BranchesPage() {
   return (
@@ -53,30 +47,6 @@ function BranchesPage() {
           </Card>
         ))}
       </div>
-
-      <Card className="mt-4">
-        <CardHeader title="Luzon expansion pipeline" hint="Planned branches" />
-        <table className="w-full text-sm">
-          <thead className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            <tr className="border-b border-border">
-              <th className="px-5 py-3 text-left font-semibold">City</th>
-              <th className="px-5 py-3 text-left font-semibold">Stage</th>
-              <th className="px-5 py-3 text-left font-semibold">Target ETA</th>
-              <th className="px-5 py-3 text-right font-semibold"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {expansion.map((e) => (
-              <tr key={e.city} className="border-b border-border/60 hover:bg-secondary/40">
-                <td className="px-5 py-3 font-medium">{e.city}</td>
-                <td className="px-5 py-3 text-muted-foreground">{e.stage}</td>
-                <td className="px-5 py-3 text-muted-foreground">{e.eta}</td>
-                <td className="px-5 py-3 text-right"><button className="text-xs font-medium text-primary hover:underline">View plan</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
     </div>
   );
 }

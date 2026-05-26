@@ -27,14 +27,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getAdminSession, signOutAdmin } from "@/lib/admin-auth";
+import { canAccessPayments, getAdminSession, isStaffRole, signOutAdmin } from "@/lib/admin-auth";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
-const navCore: NavItem[] = [
+const navCoreBase: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/bookings", label: "Bookings", icon: CalendarRange },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/fleet", label: "Fleet Management", icon: Car },
+];
+
+const navPayments: NavItem[] = [
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
 ];
 
@@ -44,15 +47,13 @@ const navOperations: NavItem[] = [
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
 ];
 
-const navAdmin: NavItem[] = [
+const navAdminItems: NavItem[] = [
   { to: "/admin/reports", label: "Reports & Analytics", icon: BarChart3 },
   { to: "/admin/decisions", label: "Decision Support", icon: Brain },
   { to: "/admin/branches", label: "Branches", icon: Building2 },
   { to: "/admin/users", label: "Users & Roles", icon: ShieldCheck },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
-
-const navAll: NavItem[] = [...navCore, ...navOperations, ...navAdmin];
 
 function isActive(pathname: string, item: NavItem) {
   return item.exact ? pathname === item.to : pathname.startsWith(item.to);
@@ -97,8 +98,12 @@ function SidebarSection({
 export function AdminShell() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const current = navAll.find((n) => isActive(pathname, n));
   const [session, setSession] = useState<ReturnType<typeof getAdminSession> | undefined>();
+  const role = session?.role;
+  const navCore = canAccessPayments(role) ? [...navCoreBase, ...navPayments] : navCoreBase;
+  const navAdmin = navAdminItems;
+  const navAll: NavItem[] = [...navCore, ...navOperations, ...navAdmin];
+  const current = navAll.find((n) => isActive(pathname, n));
   const adminContainsCurrent = navAdmin.some((n) => isActive(pathname, n));
   const [adminNavOpen, setAdminNavOpen] = useState(() => adminContainsCurrent);
 
@@ -114,6 +119,13 @@ export function AdminShell() {
   useEffect(() => {
     if (adminContainsCurrent) setAdminNavOpen(true);
   }, [adminContainsCurrent]);
+
+  useEffect(() => {
+    if (!session) return;
+    if (!canAccessPayments(session.role) && pathname.startsWith("/admin/payments")) {
+      void navigate({ to: "/admin", replace: true });
+    }
+  }, [navigate, pathname, session]);
 
   function handleSignOut() {
     signOutAdmin();
@@ -142,7 +154,9 @@ export function AdminShell() {
             <div className="font-display text-sm font-semibold tracking-tight">
               Briah&apos;s Car Rental
             </div>
-            <div className="font-display text-sm font-semibold uppercase tracking-wider">Admin</div>
+            <div className="font-display text-sm font-semibold uppercase tracking-wider">
+              {isStaffRole(role) ? "Staff" : "Admin"}
+            </div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Operations
             </div>
@@ -161,7 +175,7 @@ export function AdminShell() {
                 className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
                 aria-expanded={adminNavOpen}
               >
-                <span>Admin</span>
+                <span>{isStaffRole(role) ? "Management" : "Admin"}</span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${adminNavOpen ? "rotate-180" : ""}`} />
               </button>
 
@@ -191,7 +205,7 @@ export function AdminShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex min-h-16 items-center gap-4 border-b border-border bg-background/85 px-4 backdrop-blur md:px-8">
           <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-            <span>Admin</span>
+            <span>{isStaffRole(role) ? "Staff" : "Admin"}</span>
             <span className="text-border">/</span>
             <span className="truncate text-foreground">{current?.label ?? "Dashboard"}</span>
           </div>
@@ -273,7 +287,7 @@ export function AdminShell() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Admin</DropdownMenuLabel>
+                <DropdownMenuLabel>{isStaffRole(role) ? "Management" : "Admin"}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {navAdmin.map((n) => (
                   <DropdownMenuItem key={n.to} asChild>
