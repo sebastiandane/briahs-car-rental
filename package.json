@@ -7,6 +7,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "deploy:vercel": "powershell -ExecutionPolicy Bypass -File scripts/deploy-vercel.ps1",
+    "sync:vercel": "powershell -ExecutionPolicy Bypass -File scripts/sync-vercel.ps1",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
