@@ -197,10 +197,27 @@ export function SignInForm({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setNotice("");
     setSubmitting(true);
 
     try {
       const trimmedIdentifier = identifier.trim();
+
+      if (signInAdmin(trimmedIdentifier, password)) {
+        if (closeOnSuccess) {
+          onSuccess?.();
+        }
+        void navigate({ to: "/admin", replace: true });
+        return;
+      }
+
+      if (signInCustomerPrototype(trimmedIdentifier, password)) {
+        if (closeOnSuccess) {
+          onSuccess?.();
+        }
+        void navigate({ to: "/customer-landing", replace: true });
+        return;
+      }
 
       if (hasApiCredentialLogin()) {
         const result = await signInWithCredentialsApi({
@@ -212,23 +229,9 @@ export function SignInForm({
           setError(result.message ?? "Unable to sign in.");
           return;
         }
+
+        setNotice("Signed in. Redirecting...");
       } else {
-        if (signInAdmin(trimmedIdentifier, password)) {
-          if (closeOnSuccess) {
-            onSuccess?.();
-          }
-          void navigate({ to: "/admin", replace: true });
-          return;
-        }
-
-        if (signInCustomerPrototype(trimmedIdentifier, password)) {
-          if (closeOnSuccess) {
-            onSuccess?.();
-          }
-          void navigate({ to: "/customer-landing", replace: true });
-          return;
-        }
-
         setError("Invalid username/email or password.");
         return;
       }
