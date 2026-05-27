@@ -666,14 +666,14 @@ export const users = [
     id: "U-02",
     name: "Mike Rivera",
     email: "mike@briahsrental.ph",
-    role: "Administrator / Staff",
+    role: "Staff",
     status: "Active",
   },
   {
     id: "U-03",
     name: "Aileen Bautista",
     email: "aileen@briahsrental.ph",
-    role: "Administrator / Staff",
+    role: "Staff",
     status: "Active",
   },
   {

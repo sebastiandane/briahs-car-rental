@@ -1,6 +1,10 @@
 const ADMIN_SESSION_KEY = "briahs-admin-session";
 
-export type AdminRole = "Business Owner" | "Administrator / Staff";
+export type AdminRole = "Business Owner" | "Staff";
+
+const ROLE_MIGRATIONS: Record<string, AdminRole> = {
+  "Administrator / Staff": "Staff",
+};
 
 const ADMIN_USERS = [
   {
@@ -15,7 +19,7 @@ const ADMIN_USERS = [
     email: "staff@briahs.local",
     password: "staff123",
     name: "Mike Rivera",
-    role: "Administrator / Staff",
+    role: "Staff",
   },
 ] as const;
 
@@ -67,6 +71,13 @@ export function getAdminSession(): AdminSession | null {
     if (!session.username || !session.name || !session.role) {
       return null;
     }
+
+    const migratedRole = ROLE_MIGRATIONS[String(session.role)] ?? session.role;
+    if (migratedRole !== "Business Owner" && migratedRole !== "Staff") {
+      return null;
+    }
+
+    session.role = migratedRole;
     return session as AdminSession;
   } catch {
     window.localStorage.removeItem(ADMIN_SESSION_KEY);
@@ -84,7 +95,7 @@ export function signOutAdmin() {
 }
 
 export function isStaffRole(role: AdminRole | undefined | null) {
-  return role === "Administrator / Staff";
+  return role === "Staff";
 }
 
 export function canAccessPayments(role: AdminRole | undefined | null) {

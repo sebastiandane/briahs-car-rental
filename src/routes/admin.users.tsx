@@ -27,7 +27,7 @@ const roleSummary = [
     ],
   },
   {
-    role: "Administrator / Staff",
+    role: "Staff",
     icon: Users,
     accountType: "Operations and coordination account",
     perms: [
