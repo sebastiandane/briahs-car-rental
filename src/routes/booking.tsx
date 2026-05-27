@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
@@ -12,6 +12,8 @@ import {
 import { toast } from "sonner";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
+import { getAdminSession } from "@/lib/admin-auth";
+import { getCustomerSession } from "@/lib/customer-auth";
 import { peso, vehicles } from "@/data/vehicles";
 import { CANCELLATION_POLICY, RENTAL_DONTS, RENTAL_DOS } from "@/data/rental-policy";
 
@@ -21,6 +23,17 @@ type BookingErrors = Partial<
 >;
 
 export const Route = createFileRoute("/booking")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+
+    if (getAdminSession()) {
+      throw redirect({ to: "/admin" });
+    }
+
+    if (!getCustomerSession()) {
+      throw redirect({ to: "/sign-in" });
+    }
+  },
   validateSearch: (s: Record<string, unknown>): Search => ({
     vehicle: typeof s.vehicle === "string" ? s.vehicle : undefined,
   }),
