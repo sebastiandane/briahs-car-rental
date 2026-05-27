@@ -123,7 +123,7 @@ function BookingPage() {
               </p>
             </div>
             {submitted && (
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-600 bg-emerald-600 px-3 py-1 text-xs font-medium text-emerald-950">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Request sent
               </span>
@@ -391,7 +391,7 @@ function BookingPage() {
 
       {successNotice && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4">
-          <div className="w-[min(92vw,720px)] rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-6 text-center shadow-card backdrop-blur-sm">
+          <div className="w-[min(92vw,720px)] rounded-xl border border-emerald-500/30 bg-emerald-950 px-6 py-6 text-center shadow-card">
             <p className="font-display text-3xl font-semibold text-emerald-200">
               Booking request received
             </p>
