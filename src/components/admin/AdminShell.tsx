@@ -37,8 +37,9 @@ const navCoreBase: NavItem[] = [
   { to: "/admin/fleet", label: "Fleet Management", icon: Car },
 ];
 
-const navReports: NavItem[] = [
-  { to: "/admin/reports", label: "Reports", icon: BarChart3 },
+const navStaffModules: NavItem[] = [
+  { to: "/admin/bookings", label: "Bookings", icon: CalendarRange },
+  { to: "/admin/calendar", label: "Calendar", icon: CalendarDays },
 ];
 
 const navPayments: NavItem[] = [
@@ -107,9 +108,7 @@ export function AdminShell() {
   const staffView = isStaffRole(role);
   const navCore = canAccessPayments(role) ? [...navCoreBase, ...navPayments] : navCoreBase;
   const navAdmin = staffView ? [] : navAdminItems;
-  const navAll: NavItem[] = staffView
-    ? [...navCoreBase, ...navOperations, ...navReports]
-    : [...navCore, ...navOperations, ...navAdmin];
+  const navAll: NavItem[] = staffView ? navStaffModules : [...navCore, ...navOperations, ...navAdmin];
   const current = navAll.find((n) => isActive(pathname, n));
   const adminContainsCurrent = navAdmin.some((n) => isActive(pathname, n));
   const [adminNavOpen, setAdminNavOpen] = useState(() => adminContainsCurrent);
@@ -138,20 +137,18 @@ export function AdminShell() {
     if (!session) return;
     if (!isStaffRole(session.role)) return;
 
-    if (pathname === "/admin") return;
+    if (pathname === "/admin") {
+      void navigate({ to: "/admin/bookings", replace: true });
+      return;
+    }
 
     const allowedPrefixes = [
       "/admin/bookings",
       "/admin/calendar",
-      "/admin/customers",
-      "/admin/fleet",
-      "/admin/maintenance",
-      "/admin/notifications",
-      "/admin/reports",
     ];
 
     if (!allowedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
-      void navigate({ to: "/admin", replace: true });
+      void navigate({ to: "/admin/bookings", replace: true });
     }
   }, [navigate, pathname, session]);
 
@@ -193,9 +190,14 @@ export function AdminShell() {
 
         <nav className="no-scrollbar flex-1 overflow-y-auto px-3 py-5">
           <div className="space-y-6">
-            <SidebarSection title="Core" items={staffView ? navCoreBase : navCore} />
-            <SidebarSection title="Operations" items={navOperations} />
-            {staffView ? <SidebarSection title="Reports" items={navReports} /> : null}
+            {staffView ? (
+              <SidebarSection title="Modules" items={navStaffModules} />
+            ) : (
+              <>
+                <SidebarSection title="Core" items={navCore} />
+                <SidebarSection title="Operations" items={navOperations} />
+              </>
+            )}
 
             {!staffView ? (
               <div>
