@@ -37,6 +37,10 @@ const navCoreBase: NavItem[] = [
   { to: "/admin/fleet", label: "Fleet Management", icon: Car },
 ];
 
+const navReports: NavItem[] = [
+  { to: "/admin/reports", label: "Reports", icon: BarChart3 },
+];
+
 const navPayments: NavItem[] = [
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
 ];
@@ -100,9 +104,12 @@ export function AdminShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [session, setSession] = useState<ReturnType<typeof getAdminSession> | undefined>();
   const role = session?.role;
+  const staffView = isStaffRole(role);
   const navCore = canAccessPayments(role) ? [...navCoreBase, ...navPayments] : navCoreBase;
-  const navAdmin = navAdminItems;
-  const navAll: NavItem[] = [...navCore, ...navOperations, ...navAdmin];
+  const navAdmin = staffView ? [] : navAdminItems;
+  const navAll: NavItem[] = staffView
+    ? [...navCoreBase, ...navOperations, ...navReports]
+    : [...navCore, ...navOperations, ...navAdmin];
   const current = navAll.find((n) => isActive(pathname, n));
   const adminContainsCurrent = navAdmin.some((n) => isActive(pathname, n));
   const [adminNavOpen, setAdminNavOpen] = useState(() => adminContainsCurrent);
@@ -123,6 +130,27 @@ export function AdminShell() {
   useEffect(() => {
     if (!session) return;
     if (!canAccessPayments(session.role) && pathname.startsWith("/admin/payments")) {
+      void navigate({ to: "/admin", replace: true });
+    }
+  }, [navigate, pathname, session]);
+
+  useEffect(() => {
+    if (!session) return;
+    if (!isStaffRole(session.role)) return;
+
+    if (pathname === "/admin") return;
+
+    const allowedPrefixes = [
+      "/admin/bookings",
+      "/admin/calendar",
+      "/admin/customers",
+      "/admin/fleet",
+      "/admin/maintenance",
+      "/admin/notifications",
+      "/admin/reports",
+    ];
+
+    if (!allowedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
       void navigate({ to: "/admin", replace: true });
     }
   }, [navigate, pathname, session]);
@@ -165,26 +193,31 @@ export function AdminShell() {
 
         <nav className="no-scrollbar flex-1 overflow-y-auto px-3 py-5">
           <div className="space-y-6">
-            <SidebarSection title="Core" items={navCore} />
+            <SidebarSection title="Core" items={staffView ? navCoreBase : navCore} />
             <SidebarSection title="Operations" items={navOperations} />
+            {staffView ? <SidebarSection title="Reports" items={navReports} /> : null}
 
-            <div>
-              <button
-                type="button"
-                onClick={() => setAdminNavOpen((open) => !open)}
-                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
-                aria-expanded={adminNavOpen}
-              >
-                <span>{isStaffRole(role) ? "Management" : "Admin"}</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${adminNavOpen ? "rotate-180" : ""}`} />
-              </button>
+            {!staffView ? (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setAdminNavOpen((open) => !open)}
+                  className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
+                  aria-expanded={adminNavOpen}
+                >
+                  <span>Admin</span>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${adminNavOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
 
-              {adminNavOpen && (
-                <div className="mt-2">
-                  <SidebarSection title="" items={navAdmin} />
-                </div>
-              )}
-            </div>
+                {adminNavOpen && (
+                  <div className="mt-2">
+                    <SidebarSection title="" items={navAdmin} />
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         </nav>
 

@@ -1,9 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { MapPin, Plus, TrendingUp } from "lucide-react";
 import { Badge, Btn, Card, PageHeader } from "@/components/admin/ui";
 import { branchPerformance, peso } from "@/data/admin";
+import { getAdminSession, isStaffRole } from "@/lib/admin-auth";
 
-export const Route = createFileRoute("/admin/branches")({ component: BranchesPage });
+export const Route = createFileRoute("/admin/branches")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    const session = getAdminSession();
+    if (!session) throw redirect({ to: "/sign-in" });
+    if (isStaffRole(session.role)) throw redirect({ to: "/admin" });
+  },
+  component: BranchesPage,
+});
 
 function BranchesPage() {
   return (

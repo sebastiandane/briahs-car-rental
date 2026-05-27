@@ -1,10 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ShieldCheck, User, UserPlus, Users } from "lucide-react";
 import { Badge, Btn, Card, CardHeader, PageHeader } from "@/components/admin/ui";
 import { users } from "@/data/admin";
-import { canAccessPayments, getAdminSession } from "@/lib/admin-auth";
+import { canAccessPayments, getAdminSession, isStaffRole } from "@/lib/admin-auth";
 
-export const Route = createFileRoute("/admin/users")({ component: UsersPage });
+export const Route = createFileRoute("/admin/users")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    const session = getAdminSession();
+    if (!session) throw redirect({ to: "/sign-in" });
+    if (isStaffRole(session.role)) throw redirect({ to: "/admin" });
+  },
+  component: UsersPage,
+});
 
 const roleSummary = [
   {

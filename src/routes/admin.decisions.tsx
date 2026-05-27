@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -7,8 +7,17 @@ import { Card, CardHeader, PageHeader, Badge, Btn } from "@/components/admin/ui"
 import {
   Brain, Sparkles, AlertTriangle, ArrowRight, CloudRain, Fuel, Route as RouteIcon,
 } from "lucide-react";
+import { getAdminSession, isStaffRole } from "@/lib/admin-auth";
 
-export const Route = createFileRoute("/admin/decisions")({ component: DecisionPage });
+export const Route = createFileRoute("/admin/decisions")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    const session = getAdminSession();
+    if (!session) throw redirect({ to: "/sign-in" });
+    if (isStaffRole(session.role)) throw redirect({ to: "/admin" });
+  },
+  component: DecisionPage,
+});
 
 const goldGrid = "rgba(255,255,255,0.06)";
 

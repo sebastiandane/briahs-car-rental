@@ -1,8 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Building2, CreditCard, Mail, Plug, Shield } from "lucide-react";
 import { Btn, Card, CardHeader, PageHeader, TInput, TSelect } from "@/components/admin/ui";
+import { getAdminSession, isStaffRole } from "@/lib/admin-auth";
 
-export const Route = createFileRoute("/admin/settings")({ component: SettingsPage });
+export const Route = createFileRoute("/admin/settings")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    const session = getAdminSession();
+    if (!session) throw redirect({ to: "/sign-in" });
+    if (isStaffRole(session.role)) throw redirect({ to: "/admin" });
+  },
+  component: SettingsPage,
+});
 
 function SettingsPage() {
   return (
