@@ -197,7 +197,6 @@ export function SignInForm({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    setNotice("");
     setSubmitting(true);
 
     try {
@@ -229,8 +228,6 @@ export function SignInForm({
           setError(result.message ?? "Unable to sign in.");
           return;
         }
-
-        setNotice("Signed in. Redirecting...");
       } else {
         setError("Invalid username/email or password.");
         return;
