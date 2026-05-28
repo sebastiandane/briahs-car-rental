@@ -1,9 +1,17 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { CreditCard, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getCustomerSession } from "@/lib/customer-auth";
 
@@ -37,27 +45,47 @@ const paymentMethods = [
   {
     id: "gcash",
     label: "GCash",
-    accountName: "Briah's Journey Rentals",
+    accountName: "Briah's Car Rental",
     accountNumber: "09XX XXX XXXX",
   },
   {
     id: "bpi",
     label: "BPI",
-    accountName: "Briah's Journey Rentals",
+    accountName: "Briah's Car Rental",
     accountNumber: "XXXX-XXXX-XX",
   },
   {
     id: "bdo",
     label: "BDO",
-    accountName: "Briah's Journey Rentals",
+    accountName: "Briah's Car Rental",
     accountNumber: "XXXX-XXXX-XXXX",
   },
 ] as const;
 
 function PaymentDetailsPage() {
   const navigate = useNavigate();
+  const search = useRouterState({ select: (s) => s.location.search }) as Record<string, unknown>;
+  const resubmitReason = search?.resubmit;
+  const [resubmitModalOpen, setResubmitModalOpen] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState("");
   const [proofFileName, setProofFileName] = useState("");
+
+  useEffect(() => {
+    if (resubmitReason !== "invalid") return;
+
+    setResubmitModalOpen(true);
+
+    void navigate({
+      to: "/payment-details",
+      replace: true,
+      search: (prev) => {
+        if (!prev || typeof prev !== "object") return {};
+        const next = { ...(prev as Record<string, unknown>) };
+        delete next.resubmit;
+        return next;
+      },
+    });
+  }, [navigate, resubmitReason]);
 
   function submitProof(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -85,14 +113,33 @@ function PaymentDetailsPage() {
     <div>
       <Header />
 
+      <Dialog open={resubmitModalOpen} onOpenChange={setResubmitModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invalid details</DialogTitle>
+            <DialogDescription>
+              Invalid details, make sure details are readable, and reference match the transaction
+              id.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setResubmitModalOpen(false)}
+              className="touch-target inline-flex items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Got it
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <section className="border-b border-border bg-secondary/60">
         <div className="container-page py-14 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Payment</p>
           <h1 className="mt-2 font-display text-4xl font-semibold md:text-5xl">Payment Details</h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Use the payment methods below to settle your reservation. These are{" "}
-            <span className="font-semibold text-foreground">placeholder details</span> for the
-            prototype.
+            Use the payment methods below to settle your reservation. After payment, submit your proof of payment using the QR codes provided. We will verify your payment and update your booking status accordingly.
           </p>
         </div>
       </section>
@@ -102,7 +149,7 @@ function PaymentDetailsPage() {
           {paymentMethods.map((method) => (
             <Card
               key={method.id}
-              title={`${method.label} (QR: ${method.id})`}
+              title={method.label}
               icon={<CreditCard className="h-4 w-4 text-primary" />}
             >
               <div className="flex flex-col gap-4">
@@ -309,4 +356,3 @@ function mulberry32(seed: number) {
     return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
   };
 }
-

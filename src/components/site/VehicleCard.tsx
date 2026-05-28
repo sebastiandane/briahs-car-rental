@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Fuel, MapPin, Settings2, Users } from "lucide-react";
-import { peso, type Vehicle } from "@/data/vehicles";
+import { type Vehicle } from "@/data/vehicles";
 
 export function VehicleCard({ v }: { v: Vehicle }) {
   return (
@@ -33,19 +33,11 @@ export function VehicleCard({ v }: { v: Vehicle }) {
       </div>
 
       <div className="space-y-3 p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h3 className="font-display text-lg font-semibold leading-tight">{v.name}</h3>
-            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" /> {v.branch}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <div className="font-display text-xl font-semibold text-primary">
-              {peso(v.pricePerDay)}
-            </div>
-            <div className="text-[11px] text-muted-foreground">per day</div>
-          </div>
+        <div className="min-w-0">
+          <h3 className="font-display text-lg font-semibold leading-tight">{v.name}</h3>
+          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3" /> {v.branch}
+          </p>
         </div>
 
         <div className="grid grid-cols-3 gap-2 border-t border-border pt-3 text-xs text-muted-foreground">

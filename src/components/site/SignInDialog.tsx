@@ -8,6 +8,7 @@ import {
   Facebook,
   LockKeyhole,
   Mail,
+  MapPin,
   Phone,
   UserRound,
   X,
@@ -29,6 +30,14 @@ type LocalSignupRecord = {
   user_id: number;
   user_type: string;
   full_name: string;
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  street_address?: string;
+  barangay?: string;
+  city_municipality?: string;
+  province?: string;
+  postal_code?: string;
   email: string;
   phone_number: string;
   password_hash: string;
@@ -43,6 +52,14 @@ const DEFAULT_CUSTOMER_ACCOUNT: LocalSignupRecord = {
   user_id: 0,
   user_type: "Customers / Renters",
   full_name: "Customer Demo",
+  first_name: "Customer",
+  middle_name: "",
+  last_name: "Demo",
+  street_address: "123 Demo Street",
+  barangay: "Barangay Demo",
+  city_municipality: "Manila",
+  province: "Metro Manila",
+  postal_code: "1000",
   email: "customer@briahs.local",
   phone_number: "+63 900 000 0000",
   password_hash: "customer123",
@@ -381,8 +398,15 @@ function SignUpForm({
   onSwitchToSignIn: () => void;
   onProviderContinue: (provider: AuthProvider) => Promise<void> | void;
 }) {
-  const fullNameRef = useRef<HTMLInputElement>(null);
-  const [fullName, setFullName] = useState("");
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [barangay, setBarangay] = useState("");
+  const [cityMunicipality, setCityMunicipality] = useState("");
+  const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -393,7 +417,7 @@ function SignUpForm({
   const [providerLoading, setProviderLoading] = useState<AuthProvider | null>(null);
 
   useEffect(() => {
-    fullNameRef.current?.focus();
+    firstNameRef.current?.focus();
   }, []);
 
   async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
@@ -401,11 +425,30 @@ function SignUpForm({
     setError("");
     setNotice("");
 
-    const trimmedName = fullName.trim();
+    const trimmedFirst = firstName.trim();
+    const trimmedMiddle = middleName.trim();
+    const trimmedLast = lastName.trim();
+    const trimmedStreet = streetAddress.trim();
+    const trimmedBarangay = barangay.trim();
+    const trimmedCity = cityMunicipality.trim();
+    const trimmedProvince = province.trim();
+    const trimmedPostal = postalCode.trim();
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPhone = phoneNumber.trim();
+    const fullName = [trimmedFirst, trimmedMiddle, trimmedLast].filter(Boolean).join(" ");
 
-    if (!trimmedName || !trimmedEmail || !trimmedPhone || !password) {
+    if (
+      !trimmedFirst ||
+      !trimmedLast ||
+      !trimmedStreet ||
+      !trimmedBarangay ||
+      !trimmedCity ||
+      !trimmedProvince ||
+      !trimmedPostal ||
+      !trimmedEmail ||
+      !trimmedPhone ||
+      !password
+    ) {
       setError("Please complete all required fields.");
       return;
     }
@@ -425,7 +468,7 @@ function SignUpForm({
       if (hasApiSignup()) {
         const result = await signUpWithCredentialsApi({
           user_type: SIGNUP_USER_TYPE,
-          full_name: trimmedName,
+          full_name: fullName,
           email: trimmedEmail,
           phone_number: trimmedPhone,
           password,
@@ -441,7 +484,15 @@ function SignUpForm({
       } else {
         const didSave = saveLocalPrototypeSignup({
           user_type: SIGNUP_USER_TYPE,
-          full_name: trimmedName,
+          full_name: fullName,
+          first_name: trimmedFirst,
+          middle_name: trimmedMiddle,
+          last_name: trimmedLast,
+          street_address: trimmedStreet,
+          barangay: trimmedBarangay,
+          city_municipality: trimmedCity,
+          province: trimmedProvince,
+          postal_code: trimmedPostal,
           email: trimmedEmail,
           phone_number: trimmedPhone,
           password,
@@ -489,20 +540,121 @@ function SignUpForm({
       </div>
 
       <form onSubmit={handleSignup} className="mt-5 space-y-4">
-        <label className="block">
-          <span className="text-sm font-medium text-foreground">Full name</span>
-          <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
-            <UserRound className="h-4 w-4 text-muted-foreground" />
-            <input
-              ref={fullNameRef}
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-              autoComplete="name"
-              placeholder="Juan Dela Cruz"
-            />
-          </span>
-        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">First name</span>
+            <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
+              <UserRound className="h-4 w-4 text-muted-foreground" />
+              <input
+                ref={firstNameRef}
+                value={firstName}
+                onChange={(event) => setFirstName(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                autoComplete="given-name"
+                placeholder="Juan"
+              />
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">
+              Middle name <span className="text-muted-foreground">(optional)</span>
+            </span>
+            <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
+              <UserRound className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={middleName}
+                onChange={(event) => setMiddleName(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                autoComplete="additional-name"
+                placeholder="Santos"
+              />
+            </span>
+          </label>
+
+          <label className="block sm:col-span-2">
+            <span className="text-sm font-medium text-foreground">Last name</span>
+            <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
+              <UserRound className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={lastName}
+                onChange={(event) => setLastName(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                autoComplete="family-name"
+                placeholder="Dela Cruz"
+              />
+            </span>
+          </label>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block sm:col-span-2">
+            <span className="text-sm font-medium text-foreground">Street address</span>
+            <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={streetAddress}
+                onChange={(event) => setStreetAddress(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                autoComplete="street-address"
+                placeholder="House no. / Street / Subdivision"
+              />
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">Barangay</span>
+            <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={barangay}
+                onChange={(event) => setBarangay(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                placeholder="e.g. Barangay 123"
+              />
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">City / Municipality</span>
+            <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={cityMunicipality}
+                onChange={(event) => setCityMunicipality(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                placeholder="e.g. Manila"
+              />
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">Province</span>
+            <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={province}
+                onChange={(event) => setProvince(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                placeholder="e.g. Rizal"
+              />
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">Postal code</span>
+            <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={postalCode}
+                onChange={(event) => setPostalCode(event.target.value)}
+                inputMode="numeric"
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                placeholder="e.g. 1000"
+              />
+            </span>
+          </label>
+        </div>
 
         <label className="block">
           <span className="text-sm font-medium text-foreground">Email</span>
@@ -703,12 +855,28 @@ function signInCustomerPrototype(identifier: string, password: string) {
 function saveLocalPrototypeSignup({
   user_type,
   full_name,
+  first_name,
+  middle_name,
+  last_name,
+  street_address,
+  barangay,
+  city_municipality,
+  province,
+  postal_code,
   email,
   phone_number,
   password,
 }: {
   user_type: string;
   full_name: string;
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  street_address: string;
+  barangay: string;
+  city_municipality: string;
+  province: string;
+  postal_code: string;
   email: string;
   phone_number: string;
   password: string;
@@ -732,6 +900,14 @@ function saveLocalPrototypeSignup({
     user_id: nextId,
     user_type,
     full_name,
+    first_name,
+    middle_name,
+    last_name,
+    street_address,
+    barangay,
+    city_municipality,
+    province,
+    postal_code,
     email,
     phone_number,
     password_hash: password,

@@ -1,10 +1,9 @@
 import { createFileRoute, Link, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Bell, CreditCard, FileCheck2, FileUp, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CreditCard, FileCheck2, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
-import { CANCELLATION_POLICY, RENTAL_DONTS, RENTAL_DOS } from "@/data/rental-policy";
 import { peso } from "@/data/vehicles";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getCustomerSession, type CustomerSession } from "@/lib/customer-auth";
@@ -27,7 +26,7 @@ export const Route = createFileRoute("/customer")({
       {
         name: "description",
         content:
-          "Customer portal for requirement uploads, payment status tracking, and booking updates.",
+          "Customer portal for requirement uploads and payment status tracking.",
       },
     ],
     links: [{ rel: "canonical", href: "/customer" }],
@@ -35,18 +34,12 @@ export const Route = createFileRoute("/customer")({
   component: CustomerViewPage,
 });
 
-type PaymentStatus = "Pending" | "Verified" | "Rejected";
+type PaymentStatus = "Pending" | "Verified" | "Invalid";
 
 const paymentRows: { ref: string; amount: number; method: string; status: PaymentStatus }[] = [
   { ref: "PAY-4502", amount: 5000, method: "GCash", status: "Pending" },
-  { ref: "PAY-4487", amount: 7200, method: "Bank Transfer", status: "Verified" },
-  { ref: "PAY-4469", amount: 3000, method: "Over the counter", status: "Rejected" },
-];
-
-const notifications = [
-  "Booking BK-2101 is pending review.",
-  "Payment reminder: reservation hold expires in 12 hours.",
-  "Vehicle release reminder: Bring original IDs on pickup day.",
+  { ref: "PAY-4487", amount: 7200, method: "BDO", status: "Verified" },
+  { ref: "PAY-4469", amount: 3000, method: "BPI", status: "Invalid" },
 ];
 
 function CustomerViewPage() {
@@ -167,71 +160,87 @@ function CustomerViewPage() {
     );
   }
 
+  const highlightedPayment =
+    paymentRows.find((row) => row.ref === "PAY-4487") ?? paymentRows[0];
+
   return (
     <div>
       <Header />
 
       <section className="border-b border-border bg-secondary/60">
-        <div className="container-page py-14 text-center">
-          <p className="mx-auto max-w-3xl text-sm leading-6 text-muted-foreground">
-            Track your payment status and booking updates here.
+        <div className="container-page py-10 text-center md:text-left">
+          <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
+            Your booking details are in the QR code
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Show this when asked during verification or vehicle pickup.
           </p>
         </div>
       </section>
 
       <section className="container-page mt-8">
-        <div className="space-y-6">
-          <Card title="Payment Status" icon={<CreditCard className="h-4 w-4 text-primary" />}>
+        <div className="mx-auto max-w-4xl space-y-6">
+          <div className="flex justify-center pt-2">
+            <div className="w-full max-w-[260px]">
+              <div className="aspect-square rounded-xl border-2 border-border bg-card shadow-soft">
+                <div className="grid h-full place-items-center px-5 text-center">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      QR code
+                    </div>
+                    <div className="mt-3 rounded-lg border border-border bg-background p-3">
+                      <FakeQrCode seed={session.email} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-left shadow-soft">
+                <div className="text-xs font-semibold text-foreground">
+                  {highlightedPayment.ref} {"\u2022"} {peso(highlightedPayment.amount)}
+                </div>
+                <div className="mt-2 text-xs font-semibold text-muted-foreground">
+                  {highlightedPayment.method}
+                </div>
+                <div className="mt-2">
+                  <span
+                    className={[
+                      "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                      highlightedPayment.status === "Verified"
+                        ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+                        : highlightedPayment.status === "Invalid"
+                          ? "border-rose-500/25 bg-rose-500/10 text-rose-300"
+                          : "border-amber-500/25 bg-amber-500/10 text-amber-300",
+                    ].join(" ")}
+                  >
+                    {highlightedPayment.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Card title="Payment status" icon={<CreditCard className="h-4 w-4 text-primary" />}>
             <div className="space-y-2">
               {paymentRows.map((row) => (
                 <Row
                   key={row.ref}
-                  title={`${row.ref} • ${peso(row.amount)}`}
+                  title={`${row.ref} \u2022 ${peso(row.amount)}`}
                   subtitle={row.method}
                   status={row.status}
+                  action={
+                    row.status === "Invalid" ? (
+                      <Link
+                        to="/payment-details"
+                        search={{ resubmit: "invalid" }}
+                        className="inline-flex items-center rounded-md border border-border bg-background px-2 py-1 text-[11px] font-semibold text-foreground transition-colors hover:bg-accent"
+                      >
+                        Resubmit
+                      </Link>
+                    ) : null
+                  }
                 />
               ))}
-            </div>
-          </Card>
-
-          <Card title="Notifications and Updates" icon={<Bell className="h-4 w-4 text-primary" />}>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              {notifications.map((item) => (
-                <li
-                  key={item}
-                  className="rounded-md border border-border bg-secondary/30 px-3 py-2"
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          <Card title="Rental Policies" icon={<ShieldCheck className="h-4 w-4 text-primary" />}>
-            <div className="grid gap-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-                  Do&apos;s
-                </div>
-                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-                  {RENTAL_DOS.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-400">
-                  Don&apos;ts
-                </div>
-                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-                  {RENTAL_DONTS.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
-                {CANCELLATION_POLICY}
-              </div>
             </div>
           </Card>
         </div>
@@ -287,11 +296,21 @@ function UploadField({
   );
 }
 
-function Row({ title, subtitle, status }: { title: string; subtitle: string; status: string }) {
+function Row({
+  title,
+  subtitle,
+  status,
+  action,
+}: {
+  title: string;
+  subtitle: string;
+  status: string;
+  action?: React.ReactNode;
+}) {
   const style =
     status === "Verified"
       ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
-      : status === "Rejected"
+      : status === "Invalid"
         ? "bg-rose-500/10 text-rose-300 border-rose-500/25"
         : "bg-amber-500/10 text-amber-300 border-amber-500/25";
 
@@ -302,10 +321,105 @@ function Row({ title, subtitle, status }: { title: string; subtitle: string; sta
           <p className="text-sm font-medium">{title}</p>
           <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
-        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${style}`}>
-          {status}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${style}`}>
+            {status}
+          </span>
+          {action}
+        </div>
       </div>
     </div>
   );
+}
+
+function FakeQrCode({ seed, size = 21 }: { seed: string; size?: number }) {
+  const cells = useMemo(() => buildFakeQrCells(seed, size), [seed, size]);
+  const gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+
+  return (
+    <div className="mx-auto w-full max-w-[200px] rounded-lg border border-border bg-white p-2.5">
+      <div className="grid gap-[2px]" style={{ gridTemplateColumns }}>
+        {cells.map((on, idx) => (
+          <div
+            key={idx}
+            className={on ? "bg-black" : "bg-white"}
+            style={{ aspectRatio: "1 / 1", borderRadius: 2 }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function buildFakeQrCells(seed: string, size: number) {
+  const rand = mulberry32(hashString(seed));
+  const cells: boolean[] = new Array(size * size).fill(false);
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const idx = y * size + x;
+      const finder = finderValue(x, y, size);
+      if (finder !== null) {
+        cells[idx] = finder;
+        continue;
+      }
+
+      const timing =
+        (x === 6 && y >= 8 && y <= size - 9) || (y === 6 && x >= 8 && x <= size - 9);
+      if (timing) {
+        cells[idx] = (x + y) % 2 === 0;
+        continue;
+      }
+
+      const quietZone = x < 1 || y < 1 || x > size - 2 || y > size - 2;
+      if (quietZone) {
+        cells[idx] = false;
+        continue;
+      }
+
+      cells[idx] = rand() > 0.54;
+    }
+  }
+
+  return cells;
+}
+
+function finderValue(x: number, y: number, size: number) {
+  const finderSize = 7;
+  const positions: Array<[number, number]> = [
+    [0, 0],
+    [size - finderSize, 0],
+    [0, size - finderSize],
+  ];
+
+  for (const [x0, y0] of positions) {
+    const dx = x - x0;
+    const dy = y - y0;
+    if (dx < 0 || dy < 0 || dx >= finderSize || dy >= finderSize) continue;
+
+    const outer = dx === 0 || dx === finderSize - 1 || dy === 0 || dy === finderSize - 1;
+    const inner = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4;
+    return outer || inner;
+  }
+
+  return null;
+}
+
+function hashString(input: string) {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function mulberry32(seed: number) {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6d2b79f5;
+    let x = Math.imul(t ^ (t >>> 15), t | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
 }
