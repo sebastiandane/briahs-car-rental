@@ -282,7 +282,10 @@ export function AdminShell() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={handleSignOut}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    handleSignOut();
+                  }}
                   className="text-rose-400 focus:text-rose-400"
                 >
                   <LogOut className="h-4 w-4" />
