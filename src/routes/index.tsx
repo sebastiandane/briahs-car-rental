@@ -16,7 +16,6 @@ import { Footer } from "@/components/site/Footer";
 import { VehicleCard } from "@/components/site/VehicleCard";
 import { peso, vehicles } from "@/data/vehicles";
 import { getAdminSession } from "@/lib/admin-auth";
-import { getCustomerSession } from "@/lib/customer-auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -130,14 +129,7 @@ function Home() {
   const minPickupDate = getTodayInputValue();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.has("public")) return;
-    }
     if (getAdminSession()) return;
-    if (getCustomerSession()) {
-      void navigate({ to: "/customer-landing", replace: true });
-    }
   }, [navigate]);
 
   function handleSearch(event: React.FormEvent<HTMLFormElement>) {
