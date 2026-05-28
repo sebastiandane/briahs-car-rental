@@ -1,6 +1,6 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, CreditCard, FileCheck2, FileUp, ShieldCheck, Upload } from "lucide-react";
+import { Bell, CreditCard, FileCheck2, FileUp, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/customer")({
       {
         name: "description",
         content:
-          "Customer portal for requirement uploads, payment proof upload, and booking/payment tracking.",
+          "Customer portal for requirement uploads, payment status tracking, and booking updates.",
       },
     ],
     links: [{ rel: "canonical", href: "/customer" }],
@@ -45,18 +45,18 @@ const paymentRows: { ref: string; amount: number; method: string; status: Paymen
 
 const notifications = [
   "Booking BK-2101 is pending review.",
-  "Upload your driver's license for faster approval.",
   "Payment reminder: reservation hold expires in 12 hours.",
   "Vehicle release reminder: Bring original IDs on pickup day.",
 ];
 
 function CustomerViewPage() {
   const navigate = useNavigate();
+  const hash = useRouterState({ select: (s) => s.location.hash });
+  const normalizedHash = hash?.startsWith("#") ? hash.slice(1) : hash ?? "";
+  const showRequirementsOnly = normalizedHash === "post-booking";
   const [session, setSession] = useState<CustomerSession | null | undefined>(undefined);
   const [idFileName, setIdFileName] = useState("");
   const [licenseFileName, setLicenseFileName] = useState("");
-  const [paymentFileName, setPaymentFileName] = useState("");
-  const [paymentRef, setPaymentRef] = useState("");
 
   useEffect(() => {
     const activeSession = getCustomerSession();
@@ -83,20 +83,26 @@ function CustomerViewPage() {
 
   if (session === null) return null;
 
-  return (
-    <div>
-      <Header />
+  if (showRequirementsOnly) {
+    return (
+      <div>
+        <Header />
 
-      <section className="border-b border-border bg-secondary/60">
-        <div className="container-page py-14 text-center">
-          <p className="mx-auto max-w-3xl text-sm leading-6 text-muted-foreground">
-            Continue with your requirements and proof of payment here.
-          </p>
-        </div>
-      </section>
+        <section className="border-b border-border bg-secondary/60">
+          <div className="container-page py-14 text-center">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">
+              Next step
+            </p>
+            <h1 className="mt-2 font-display text-4xl font-semibold md:text-5xl">
+              Requirement Submission
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+              Upload your valid ID and driver&apos;s license to speed up approval.
+            </p>
+          </div>
+        </section>
 
-      <section id="post-booking" className="container-page mt-8">
-        <div className="grid gap-6 lg:grid-cols-2">
+        <section className="container-page mt-10">
           <Card
             title="Requirement Submission"
             icon={<FileCheck2 className="h-4 w-4 text-primary" />}
@@ -104,9 +110,25 @@ function CustomerViewPage() {
             <form
               onSubmit={(event) => {
                 event.preventDefault();
+
+                const missing: string[] = [];
+                if (!idFileName) missing.push("Valid ID");
+                if (!licenseFileName) missing.push("Driver's License");
+
+                if (missing.length > 0) {
+                  toast.error("Please upload the required documents.", {
+                    description: `Missing: ${missing.join(" and ")}.`,
+                  });
+                  return;
+                }
+
                 toast.success("Requirements uploaded", {
                   description: "ID and driver's license are queued for verification.",
                 });
+
+                window.setTimeout(() => {
+                  void navigate({ to: "/payment-details" });
+                }, 700);
               }}
               className="grid gap-3 sm:grid-cols-2"
             >
@@ -128,38 +150,32 @@ function CustomerViewPage() {
                 Submit Requirements
               </button>
             </form>
-          </Card>
 
-          <Card title="Payment Proof Upload" icon={<CreditCard className="h-4 w-4 text-primary" />}>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                toast.success("Payment proof uploaded", {
-                  description: "Payment status is now Pending verification.",
-                });
-              }}
-              className="space-y-3"
-            >
-              <input
-                value={paymentRef}
-                onChange={(event) => setPaymentRef(event.target.value)}
-                className="input-control"
-                placeholder="Reference number"
-              />
-              <UploadField
-                label="Proof of payment"
-                helper={paymentFileName || "Upload screenshot or receipt"}
-                onFilePick={(name) => setPaymentFileName(name)}
-              />
-              <button
-                type="submit"
-                className="touch-target inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            <div className="mt-4 text-center text-sm">
+              <Link
+                to="/customer"
+                className="font-semibold text-primary transition-colors hover:text-primary/80"
               >
-                <Upload className="h-4 w-4" />
-                Submit Payment Proof
-              </button>
-            </form>
+                Go to Customer Dashboard
+              </Link>
+            </div>
           </Card>
+        </section>
+
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Header />
+
+      <section className="border-b border-border bg-secondary/60">
+        <div className="container-page py-14 text-center">
+          <p className="mx-auto max-w-3xl text-sm leading-6 text-muted-foreground">
+            Track your payment status and booking updates here.
+          </p>
         </div>
       </section>
 

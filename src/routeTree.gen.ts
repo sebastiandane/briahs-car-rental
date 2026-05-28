@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VehiclesRouteImport } from './routes/vehicles'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as PaymentDetailsRouteImport } from './routes/payment-details'
 import { Route as CustomerLandingRouteImport } from './routes/customer-landing'
 import { Route as CustomerRouteImport } from './routes/customer'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -39,6 +40,11 @@ const VehiclesRoute = VehiclesRouteImport.update({
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentDetailsRoute = PaymentDetailsRouteImport.update({
+  id: '/payment-details',
+  path: '/payment-details',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CustomerLandingRoute = CustomerLandingRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/customer': typeof CustomerRoute
   '/customer-landing': typeof CustomerLandingRoute
+  '/payment-details': typeof PaymentDetailsRoute
   '/sign-in': typeof SignInRoute
   '/vehicles': typeof VehiclesRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/customer': typeof CustomerRoute
   '/customer-landing': typeof CustomerLandingRoute
+  '/payment-details': typeof PaymentDetailsRoute
   '/sign-in': typeof SignInRoute
   '/vehicles': typeof VehiclesRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/customer': typeof CustomerRoute
   '/customer-landing': typeof CustomerLandingRoute
+  '/payment-details': typeof PaymentDetailsRoute
   '/sign-in': typeof SignInRoute
   '/vehicles': typeof VehiclesRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/customer'
     | '/customer-landing'
+    | '/payment-details'
     | '/sign-in'
     | '/vehicles'
     | '/admin/bookings'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/customer'
     | '/customer-landing'
+    | '/payment-details'
     | '/sign-in'
     | '/vehicles'
     | '/admin/bookings'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/customer'
     | '/customer-landing'
+    | '/payment-details'
     | '/sign-in'
     | '/vehicles'
     | '/admin/bookings'
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   CustomerRoute: typeof CustomerRoute
   CustomerLandingRoute: typeof CustomerLandingRoute
+  PaymentDetailsRoute: typeof PaymentDetailsRoute
   SignInRoute: typeof SignInRoute
   VehiclesRoute: typeof VehiclesRoute
 }
@@ -302,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-details': {
+      id: '/payment-details'
+      path: '/payment-details'
+      fullPath: '/payment-details'
+      preLoaderRoute: typeof PaymentDetailsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/customer-landing': {
@@ -481,6 +501,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   CustomerRoute: CustomerRoute,
   CustomerLandingRoute: CustomerLandingRoute,
+  PaymentDetailsRoute: PaymentDetailsRoute,
   SignInRoute: SignInRoute,
   VehiclesRoute: VehiclesRoute,
 }

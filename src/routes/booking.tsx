@@ -82,9 +82,12 @@ function BookingPage() {
     if (!customerSession) return;
     setName((prev) => (prev ? prev : customerSession.name));
     setEmail((prev) => (prev ? prev : customerSession.email));
+    setErrors((current) => ({ ...current, name: undefined, email: undefined }));
   }, [customerSession]);
 
   const selected = vehicles.find((v) => v.id === vehicleId) ?? initial;
+  const effectiveName = customerSession?.name ?? name;
+  const effectiveEmail = customerSession?.email ?? email;
 
   const days = useMemo(() => {
     if (!pickup || !dropoff) return 1;
@@ -94,8 +97,7 @@ function BookingPage() {
   const total = selected.pricePerDay * days;
   const minDateTime = getNowInputValue();
 
-  function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function performSubmit(nextAcceptTerms = acceptTerms) {
     setSubmitted(false);
 
     if (!getCustomerSession()) {
@@ -104,7 +106,14 @@ function BookingPage() {
       return;
     }
 
-    const nextErrors = validateBooking({ pickup, dropoff, name, email, phone, acceptTerms });
+    const nextErrors = validateBooking({
+      pickup,
+      dropoff,
+      name: effectiveName,
+      email: effectiveEmail,
+      phone,
+      acceptTerms: nextAcceptTerms,
+    });
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -121,6 +130,11 @@ function BookingPage() {
         void navigate({ to: "/customer", hash: "post-booking" });
       }, 1400);
     }, 650);
+  }
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    performSubmit();
   }
 
   return (
@@ -200,14 +214,6 @@ function BookingPage() {
                 ))}
               </select>
             </Field>
-            <Field label="Drive mode" id="booking-drive-mode">
-              <input
-                id="booking-drive-mode"
-                className="input-control"
-                value="Self-drive"
-                disabled
-              />
-            </Field>
             <Field label="Pickup branch" id="booking-branch">
               <select
                 id="booking-branch"
@@ -268,35 +274,47 @@ function BookingPage() {
           <h2 className="mt-10 font-display text-2xl font-semibold">Your details</h2>
           <div className="mt-6 grid gap-5 md:grid-cols-2">
             <Field label="Full name" id="booking-name" error={errors.name}>
-              <input
-                id="booking-name"
-                value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
-                  setErrors((current) => ({ ...current, name: undefined }));
-                }}
-                aria-invalid={Boolean(errors.name)}
-                aria-describedby={errors.name ? "booking-name-error" : undefined}
-                className="input-control"
-                autoComplete="name"
-                required
-              />
+              {customerSession ? (
+                <div className="input-control flex items-center bg-secondary/40 text-muted-foreground">
+                  <span className="text-foreground">{customerSession.name}</span>
+                </div>
+              ) : (
+                <input
+                  id="booking-name"
+                  value={name}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setErrors((current) => ({ ...current, name: undefined }));
+                  }}
+                  aria-invalid={Boolean(errors.name)}
+                  aria-describedby={errors.name ? "booking-name-error" : undefined}
+                  className="input-control"
+                  autoComplete="name"
+                  required
+                />
+              )}
             </Field>
             <Field label="Email" id="booking-email" error={errors.email}>
-              <input
-                id="booking-email"
-                type="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setErrors((current) => ({ ...current, email: undefined }));
-                }}
-                aria-invalid={Boolean(errors.email)}
-                aria-describedby={errors.email ? "booking-email-error" : undefined}
-                className="input-control"
-                autoComplete="email"
-                required
-              />
+              {customerSession ? (
+                <div className="input-control flex items-center bg-secondary/40 text-muted-foreground">
+                  <span className="text-foreground">{customerSession.email}</span>
+                </div>
+              ) : (
+                <input
+                  id="booking-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setErrors((current) => ({ ...current, email: undefined }));
+                  }}
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? "booking-email-error" : undefined}
+                  className="input-control"
+                  autoComplete="email"
+                  required
+                />
+              )}
             </Field>
             <Field label="Phone (PH)" id="booking-phone" error={errors.phone}>
               <input
@@ -331,8 +349,34 @@ function BookingPage() {
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {submitting ? "Sending request..." : "Request booking"}
           </button>
-          <label className="mt-3 block text-xs text-muted-foreground">
-            <span className="flex items-start gap-2">
+          <div className="mt-6 rounded-xl border border-border bg-secondary p-5 text-sm">
+            <div className="font-medium text-foreground">Rental do&apos;s and don&apos;ts</div>
+            <div className="mt-3 grid gap-4 md:grid-cols-2">
+              <div className="rounded-lg border border-border bg-card p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+                  Do&apos;s
+                </div>
+                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
+                  {RENTAL_DOS.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-400">
+                  Don&apos;ts
+                </div>
+                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
+                  {RENTAL_DONTS.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-4 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+              {CANCELLATION_POLICY}
+            </div>
+            <label className="mt-4 flex items-start justify-center gap-2 text-xs text-muted-foreground">
               <input
                 type="checkbox"
                 checked={acceptTerms}
@@ -343,13 +387,10 @@ function BookingPage() {
                 aria-invalid={Boolean(errors.terms)}
                 className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-primary"
               />
-              <span>
-                I agree to the rental do&apos;s and don&apos;ts, required documents, and
-                cancellation policy.
-              </span>
-            </span>
-            {errors.terms && <span className="mt-1.5 block text-rose-300">{errors.terms}</span>}
-          </label>
+              <span>I agree to the rental do&apos;s and don&apos;ts and cancellation policy.</span>
+            </label>
+            {errors.terms && <div className="mt-2 text-center text-rose-300">{errors.terms}</div>}
+          </div>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             You won't be charged yet - we'll confirm availability first.
           </p>
@@ -368,11 +409,6 @@ function BookingPage() {
               </div>
               <h3 className="font-display text-xl font-semibold">{selected.name}</h3>
               <div className="mt-3 space-y-2 text-sm">
-                <Row
-                  icon={<Car className="h-4 w-4 text-primary" />}
-                  label="Mode"
-                  value="Self-drive"
-                />
                 <Row
                   icon={<MapPin className="h-4 w-4 text-primary" />}
                   label="Branch"
@@ -409,35 +445,6 @@ function BookingPage() {
               <li>24/7 roadside assistance</li>
               <li>Reservation payments are non-refundable once paid.</li>
             </ul>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-5 text-sm">
-            <div className="font-medium text-foreground">Rental do&apos;s and don&apos;ts</div>
-            <div className="mt-3 grid gap-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-                  Do&apos;s
-                </div>
-                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
-                  {RENTAL_DOS.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-400">
-                  Don&apos;ts
-                </div>
-                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
-                  {RENTAL_DONTS.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <div className="mt-4 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
-              {CANCELLATION_POLICY}
-            </div>
           </div>
         </aside>
       </section>

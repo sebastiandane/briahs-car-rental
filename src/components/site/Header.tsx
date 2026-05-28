@@ -10,7 +10,7 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const customerSession = getCustomerSession();
-  const showCustomerDashboardLink = customerSession != null && pathname !== "/";
+  const showCustomerDashboardLink = customerSession != null;
   const navLinks = [
     { to: "/", label: "Home", exact: true },
     { to: "/vehicles", label: "Vehicles" },
