@@ -89,7 +89,7 @@ function CustomersPage() {
             </dl>
 
             <div className="mt-5 grid grid-cols-3 gap-2 border-t border-border pt-5">
-              <KPIish label="Active" value="1" />
+              <KPIish label="Ongoing" value="1" />
               <KPIish label="Completed" value={String(selected.trips - 1)} />
               <KPIish label="Cancelled" value="0" />
             </div>
@@ -100,7 +100,8 @@ function CustomersPage() {
             {[
               { f: "drivers_license.jpg", state: "Verified" as const },
               { f: "valid_id_back.jpg", state: "Verified" as const },
-              { f: "selfie_with_id.jpg", state: selected.verification },
+              { f: "secondary_id_front.jpg", state: selected.verification },
+              { f: "secondary_id_back.jpg", state: selected.verification },
             ].map((d) => (
               <li key={d.f} className="flex items-center justify-between px-5 py-3">
                 <span className="font-mono text-xs">{d.f}</span>

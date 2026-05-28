@@ -1,1360 +1,1242 @@
-# Activity Diagram List
+# Activity Diagram Coverage
 
-## Owner Activities
-- Owner sign in and dashboard access
-- Owner dashboard review and report export
-- Booking approval and rejection
-- Customer verification management
-- Fleet search, filter, and service action
-- Maintenance scheduling and service recording
-- Payment verification
-- Notification triage
+## Owner
+- Owner sign-in, dashboard routing, and admin sidebar access
+- Owner dashboard monitoring and report export
 - Reports and analytics review
-- Decision support actions
-- Branch management
+- Decision support forecasting, vehicle recommendation, and branch allocation approval
+- Booking management, filtering, status editing, and report export
+- Customer record review and requirement verification
+- Payment proof review and verification
+- Fleet management, vehicle creation, vehicle status control, and service handoff
+- Maintenance scheduling and service status tracking
+- Operational notification triage
 - Users and roles management
-- Settings management
+- Branch monitoring and branch creation
 
-## Staff Activities
-- Staff sign in and restricted access
-- Staff booking queue management
-- Staff calendar review
+## Staff
+- Staff sign-in and role-based module access
+- Booking queue filtering and status management
+- Reservation calendar and dispatch review
 
-## Customer Activities
-- Customer registration
-- Customer sign in
-- Customer vehicle search
-- Browse vehicles and reserve
-- Booking request
-- Requirement submission
-- Payment proof submission
-- Customer dashboard tracking
-- Contact inquiry
+## Customer
+- Visitor browsing, vehicle selection, and booking entry
+- Account sign-in and customer registration
+- Booking request submission with rental policy agreement
+- Requirement submission after booking
+- Payment method review and proof-of-payment submission
+- Customer dashboard QR and payment status tracking
+- Invalid payment resubmission
 
-## Shared or Cross-Role Activities
-- Session and role authorization
-- OAuth sign in or sign up
-- Logout
-- Error and not found recovery
+## Shared/System
+- Role-based route protection and sidebar navigation
+- Sign-out flow for customer, staff, and owner sessions
+- Form validation, success notifications, and alternate/error states
 
-# Assumptions
+# PlantUML Activity Diagrams
 
-- Owner maps to the visible Business Owner role.
-- Staff is limited to the operational modules visible in the UI: bookings and calendar.
-- Customer account creation, booking requests, uploads, approvals, payments, exports, and settings changes are treated as full-system workflows because the UI presents them as actions.
-- Some UI actions do not expose full implementation details. Those flows include an assumption note in the diagram.
-- Mermaid subgraphs are used as swimlanes because Mermaid does not provide native UML activity partitions.
+## Shared/System: Role-Based Entry and Route Protection
 
-# Mermaid Diagrams
+Based on frontend files/screens:
+- `src/components/site/Header.tsx`
+- `src/components/admin/AdminShell.tsx`
+- Navigation links, customer dashboard link, admin sidebar groups
 
-## Mermaid Style Pattern
+```plantuml
+@startuml
+title Shared/System: Role-Based Entry and Route Protection
 
-Each diagram uses the same class pattern:
+partition "User" {
+  start
+  :Open website route;
+}
 
-- Blue nodes: user actions
-- Green nodes: system actions
-- Purple nodes: decision points
-- Red nodes: error or rejection paths
-- Orange circles: start and end nodes
+partition "System" {
+  :Read current session and requested route;
+}
 
-## Owner Sign In and Dashboard Access
+if (Signed in?) then (No)
+  if (Protected route?) then (Yes)
+    partition "System" {
+      :Redirect to Sign in page;
+      :Display authentication form;
+    }
+  else (No)
+    partition "System" {
+      :Display public landing, vehicles, booking, or contact page;
+    }
+  endif
+else (Yes)
+  partition "System" {
+    :Identify session role;
+  }
+  if (Customer session?) then (Yes)
+    partition "System" {
+      :Show customer navigation and dashboard link;
+      :Route customer to customer pages;
+    }
+  else (Staff or Owner)
+    if (Staff requested allowed module?) then (Yes)
+      partition "System" {
+        :Display staff sidebar with Bookings and Calendar;
+      }
+    else (Owner/admin access)
+      partition "System" {
+        :Display grouped admin sidebar modules;
+      }
+    endif
+  endif
+endif
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open sign-in page]
-    C[Enter owner credentials]
-    D[Submit login form]
-    Z([End])
-  end
-
-  subgraph System["System"]
-    direction TB
-    E[Validate credentials]
-    F{Credentials valid?}
-    G{Role is Owner?}
-    H[Create owner session]
-    I[Redirect to owner dashboard]
-    J[Show invalid login message]
-    K[Redirect to allowed dashboard]
-  end
-
-  A --> B --> C --> D --> E --> F
-  F -- Yes --> G
-  F -- No --> J --> Z
-  G -- Yes --> H --> I --> Z
-  G -- No --> K --> Z
-
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D user;
-  class E,H,I,K system;
-  class F,G decision;
-  class J error;
+partition "User" {
+  :Continue in permitted workflow;
+  stop
+}
+@enduml
 ```
 
-## Owner Dashboard Review and Report Export
+## Shared/System: Sign In and Customer Registration
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open dashboard]
-    C[Review KPIs and alerts]
-    D[Review revenue and booking charts]
-    E{Export report?}
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/components/site/SignInDialog.tsx`
+- `src/routes/sign-in.tsx`
+- Sign in tab, create account tab, provider buttons, customer registration fields
 
-  subgraph System["System"]
-    direction TB
-    F[Load operational KPIs]
-    G[Load revenue trend]
-    H[Load branch demand and booking volume]
-    I[Load alerts, activity, and latest bookings]
-    J[Generate report file]
-    K[Provide report download]
-  end
+```plantuml
+@startuml
+title Shared/System: Sign In and Customer Registration
 
-  A --> B --> F --> G --> H --> I --> C --> D --> E
-  E -- Yes --> J --> K --> Z
-  E -- No --> Z
+partition "User" {
+  start
+  :Open Sign in dialog or Sign in page;
+  :Choose Sign in or Create account;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D user;
-  class F,G,H,I,J,K system;
-  class E decision;
+if (Choose Sign in?) then (Yes)
+  partition "User" {
+    :Enter email or username and password;
+    :Submit sign in form;
+  }
+  partition "System" {
+    :Validate credentials and determine role;
+  }
+  if (Credentials valid?) then (Yes)
+    if (Owner or Staff?) then (Yes)
+      partition "System" {
+        :Create admin session;
+        :Redirect to admin workspace;
+      }
+    else (Customer)
+      partition "System" {
+        :Create customer session;
+        :Redirect to customer destination;
+      }
+    endif
+  else (No)
+    partition "System" {
+      :Display sign in error message;
+    }
+  endif
+else (Create account)
+  partition "Customer" {
+    :Enter first name, optional middle name, last name;
+    :Enter street, barangay, city, province, and postal code;
+    :Enter email, phone, password, and confirm password;
+    :Submit account registration;
+  }
+  partition "System" {
+    :Validate required fields and password confirmation;
+  }
+  if (Registration valid?) then (Yes)
+    partition "System" {
+      :Create customer account;
+      :Prepare customer sign-in session;
+      :Show successful registration message;
+    }
+  else (No)
+    partition "System" {
+      :Show field validation errors;
+    }
+  endif
+endif
+
+partition "User" {
+  stop
+}
+@enduml
 ```
 
-## Booking Approval and Rejection
+## Shared/System: Sign Out
 
-```mermaid
-flowchart TD
-  subgraph OwnerOrStaff["Owner or Staff"]
-    direction TB
-    A([Start])
-    B[Open bookings page]
-    C[Search bookings]
-    D[Filter by status or branch]
-    E[Select booking action]
-    F{Booking pending?}
-    G[Click Approve]
-    H[Click Reject]
-    I[Open Manage action]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/components/admin/AdminShell.tsx`
+- Header profile menu, Sign out action
 
-  subgraph System["System"]
-    direction TB
-    J[Retrieve booking records]
-    K[Display filtered booking queue]
-    L{Approve or reject?}
-    M[Set booking status to Confirmed]
-    N[Set booking status to Cancelled or Rejected]
-    O[Notify customer of decision]
-    P[Load booking details]
-    Q[Show no matching bookings]
-    R{Results found?}
-  end
+```plantuml
+@startuml
+title Shared/System: Sign Out
 
-  A --> B --> J --> C --> D --> K
-  K --> R{Results found?}
-  R -- No --> Q --> Z
-  R -- Yes --> E --> F
-  F -- Yes --> L
-  L -- Approve --> G --> M --> O --> Z
-  L -- Reject --> H --> N --> O --> Z
-  F -- No --> I --> P --> Z
+partition "User" {
+  start
+  :Open profile menu;
+  :Click Sign out;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,G,H,I user;
-  class J,K,M,N,O,P system;
-  class F,L,R decision;
-  class Q error;
+partition "System" {
+  :Clear active admin and customer sessions;
+  :Close profile menu;
+  :Redirect to default landing page;
+}
+
+partition "User" {
+  :View public home page;
+  stop
+}
+@enduml
 ```
 
-## Customer Verification Management
+## Customer: Browse Fleet and Start Booking
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open customers page]
-    C[Search customer]
-    D[Select customer row]
-    E[Review uploaded requirements]
-    F{Requirements acceptable?}
-    G[Click Approve]
-    H[Click Reject]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/index.tsx`
+- `src/routes/vehicles.tsx`
+- `src/components/site/VehicleCard.tsx`
+- Reserve button, fleet cards, filters, booking navigation
 
-  subgraph System["System"]
-    direction TB
-    I[Load matching customers]
-    J[Load selected customer profile]
-    K[Display uploaded requirement statuses]
-    L[Set verification to Verified]
-    M[Set verification to Rejected]
-    N[Notify customer]
-    O[Show no matching customers]
-    P{Customer found?}
-  end
+```plantuml
+@startuml
+title Customer: Browse Fleet and Start Booking
 
-  A --> B --> C --> I --> P{Customer found?}
-  P -- No --> O --> Z
-  P -- Yes --> D --> J --> K --> E --> F
-  F -- Yes --> G --> L --> N --> Z
-  F -- No --> H --> M --> N --> Z
+partition "Customer" {
+  start
+  :Open Home or Vehicles page;
+  :Review fleet cards, categories, branches, and specs;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,G,H user;
-  class I,J,K,L,M,N system;
-  class F,P decision;
-  class O error;
+partition "System" {
+  :Display available vehicle cards and navigation actions;
+}
+
+partition "Customer" {
+  :Use vehicle filters or search options;
+}
+
+partition "System" {
+  :Update visible vehicle list;
+}
+
+if (Matching vehicles found?) then (Yes)
+  partition "Customer" {
+    :Click Reserve on selected vehicle;
+  }
+  partition "System" {
+    :Open Booking page with selected vehicle;
+  }
+else (No)
+  partition "System" {
+    :Show no matching vehicle result;
+  }
+endif
+
+partition "Customer" {
+  stop
+}
+@enduml
 ```
 
-## Fleet Search, Filter, and Service Action
+## Customer: Booking Request and Rental Policy Agreement
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open fleet management]
-    C[Search vehicle or plate]
-    D[Filter by vehicle status]
-    E[Switch grid or table view]
-    F{Choose action}
-    G[Click Add vehicle]
-    H[Click Service now]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/booking.tsx`
+- Trip details card, customer details fields, vehicle summary card
+- Request booking button, I agree checkbox, rental do's and don'ts modal
 
-  subgraph System["System"]
-    direction TB
-    I[Retrieve fleet records]
-    J[Display filtered fleet list]
-    K[Open vehicle creation form]
-    L[Open service record form]
-    M[Show no matching vehicles]
-    N{Vehicles found?}
-  end
+```plantuml
+@startuml
+title Customer: Booking Request and Rental Policy Agreement
 
-  A --> B --> I --> C --> D --> E --> N{Vehicles found?}
-  N -- No --> M --> Z
-  N -- Yes --> J --> F
-  F -- Add vehicle --> G --> K --> Z
-  F -- Service vehicle --> H --> L --> Z
+partition "Customer" {
+  start
+  :Open Booking page;
+  :Select vehicle, pickup branch, return branch, and schedule;
+  :Enter phone and destination details;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,G,H user;
-  class I,J,K,L system;
-  class F,N decision;
-  class M error;
+partition "System" {
+  :Display selected vehicle summary and booking form;
+  :Display customer name and email from account when signed in;
+}
+
+partition "Customer" {
+  :Click I agree checkbox;
+}
+
+partition "System" {
+  :Open rental do's and don'ts modal;
+}
+
+partition "Customer" {
+  :Read policies, inclusions, and cancellation rules;
+  :Click I agree in modal;
+  :Click Request booking;
+}
+
+partition "System" {
+  :Validate trip details, customer details, and policy agreement;
+}
+
+if (Form valid?) then (Yes)
+  if (Customer signed in?) then (Yes)
+    partition "System" {
+      :Submit booking request;
+      :Show booking request received confirmation;
+      :Redirect to post-booking requirements page;
+    }
+  else (No)
+    partition "System" {
+      :Open sign-in prompt before booking submission;
+    }
+  endif
+else (No)
+  partition "System" {
+    :Display field validation messages near required fields;
+  }
+endif
+
+partition "Customer" {
+  stop
+}
+@enduml
 ```
 
-## Maintenance Scheduling and Service Recording
+## Customer: Post-Booking Requirement Submission
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open maintenance page]
-    C[Review service KPIs and schedule]
-    D[Click Schedule service or Service now]
-    E[Enter service details]
-    F[Submit service record]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/customer.tsx`
+- `/customer#post-booking`
+- Requirement Submission page, Valid ID upload, Driver's License upload, Submit Requirements button
 
-  subgraph System["System"]
-    direction TB
-    G[Load maintenance queue]
-    H[Load downtime chart]
-    I[Open maintenance form]
-    J[Validate service record]
-    K{Record valid?}
-    L[Save maintenance record]
-    M[Update service queue and vehicle status]
-    N[Show validation errors]
-  end
+```plantuml
+@startuml
+title Customer: Post-Booking Requirement Submission
 
-  A --> B --> G --> H --> C --> D --> I --> E --> F --> J --> K
-  K -- Yes --> L --> M --> Z
-  K -- No --> N --> E
+partition "System" {
+  start
+  :Open post-booking requirements page;
+  :Display required document upload form;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,F user;
-  class G,H,I,J,L,M system;
-  class K decision;
-  class N error;
+partition "Customer" {
+  :Upload valid ID document;
+  :Upload driver's license document;
+  :Click Submit Requirements;
+}
+
+partition "System" {
+  :Validate required document uploads;
+}
+
+if (Documents complete?) then (Yes)
+  partition "System" {
+    :Record submitted requirements;
+    :Show successful submission message;
+    :Redirect to Payment Details page;
+  }
+else (No)
+  partition "System" {
+    :Display missing document error message;
+    :Keep customer on requirements page;
+  }
+endif
+
+partition "Customer" {
+  stop
+}
+@enduml
 ```
 
-## Payment Verification
+## Customer: Payment Details and Proof Submission
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open payments page]
-    C[Select payment from queue]
-    D[Review proof of payment]
-    E{Proof valid?}
-    F[Click Verify payment]
-    G[Reject payment proof]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/payment-details.tsx`
+- GCash, BPI, BDO payment cards
+- Reference number field, proof-of-payment upload, Submit Proof button
 
-  subgraph System["System"]
-    direction TB
-    H[Check owner payment permission]
-    I{Owner allowed?}
-    J[Load payment queue]
-    K[Load receipt and payment metadata]
-    L[Set payment status to Paid or Partially Paid]
-    M[Update booking balance]
-    N[Set payment status to Failed or Rejected]
-    O[Notify customer]
-    P[Redirect away from payments]
-  end
+```plantuml
+@startuml
+title Customer: Payment Details and Proof Submission
 
-  A --> B --> H --> I
-  I -- No --> P --> Z
-  I -- Yes --> J --> C --> K --> D --> E
-  E -- Yes --> F --> L --> M --> O --> Z
-  E -- No --> G --> N --> O --> Z
+partition "Customer" {
+  start
+  :Open Payment Details page;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,F,G user;
-  class H,J,K,L,M,N,O system;
-  class E,I decision;
-  class P error;
+partition "System" {
+  :Display GCash, BPI, and BDO payment methods;
+  :Display QR codes and account details;
+  :Display proof-of-payment submission form;
+}
+
+partition "Customer" {
+  :Choose payment method;
+  :Enter reference number;
+  :Upload payment receipt or screenshot;
+  :Click Submit Proof;
+}
+
+partition "System" {
+  :Validate reference number and uploaded proof;
+}
+
+if (Proof complete?) then (Yes)
+  partition "System" {
+    :Submit proof of payment;
+    :Show proof submission success message;
+    :Redirect to Customer Dashboard;
+  }
+else (No)
+  partition "System" {
+    :Display missing payment detail error;
+    :Keep proof form available for correction;
+  }
+endif
+
+partition "Customer" {
+  stop
+}
+@enduml
 ```
 
-## Notification Triage
+## Customer: Dashboard QR and Payment Status Tracking
 
-```mermaid
-flowchart TD
-  subgraph OwnerOrStaff["Owner or Staff"]
-    direction TB
-    A([Start])
-    B[Open notifications page]
-    C[Filter by category]
-    D{Choose notification action}
-    E[Mark all read]
-    F[Clear archive]
-    G[Open row action]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/customer.tsx`
+- Customer Dashboard QR card, highlighted payment summary, payment status list
+- Invalid status row and Resubmit button
 
-  subgraph System["System"]
-    direction TB
-    H[Load notifications]
-    I[Group notifications by type]
-    J[Calculate unread count]
-    K[Display filtered list]
-    L[Mark all notifications as read]
-    M[Remove archived read notifications]
-    N[Mark selected notification as read]
-    O[Open related workflow]
-    P[Show empty state]
-  end
+```plantuml
+@startuml
+title Customer: Dashboard QR and Payment Status Tracking
 
-  A --> B --> H --> I --> J --> C --> K --> Q{Notifications found?}
-  Q -- No --> P --> Z
-  Q -- Yes --> D
-  D -- Mark all read --> E --> L --> Z
-  D -- Clear archive --> F --> M --> Z
-  D -- Row action --> G --> N --> O --> Z
+partition "Customer" {
+  start
+  :Open Customer Dashboard;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,E,F,G user;
-  class H,I,J,K,L,M,N,O system;
-  class D,Q decision;
-  class P error;
+partition "System" {
+  :Display booking QR details for verification or pickup;
+  :Display highlighted payment reference and method;
+  :Display payment status list;
+}
+
+partition "Customer" {
+  :Review pending, verified, and invalid payment entries;
+}
+
+if (Payment status is invalid?) then (Yes)
+  partition "Customer" {
+    :Click Resubmit beside invalid payment;
+  }
+  partition "System" {
+    :Open Payment Details page;
+    :Show invalid details notice;
+  }
+else (No)
+  partition "System" {
+    :Keep dashboard ready for booking verification;
+  }
+endif
+
+partition "Customer" {
+  stop
+}
+@enduml
 ```
 
-## Reports and Analytics Review
+## Customer: Invalid Payment Resubmission
 
-```mermaid
-flowchart TD
-  subgraph OwnerOrStaff["Owner or Staff"]
-    direction TB
-    A([Start])
-    B[Open reports page]
-    C[Review analytics]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/customer.tsx`
+- `src/routes/payment-details.tsx`
+- Resubmit button, invalid details modal, proof-of-payment form
 
-  subgraph System["System"]
-    direction TB
-    D[Check account role]
-    E{Role is Owner?}
-    F[Load financial and operational reports]
-    G[Show revenue, bookings, utilization, and branch performance]
-    H[Load non-financial operational reports]
-    I[Show bookings, utilization, and maintenance workload]
-  end
+```plantuml
+@startuml
+title Customer: Invalid Payment Resubmission
 
-  A --> B --> D --> E
-  E -- Yes --> F --> G --> C --> Z
-  E -- No --> H --> I --> C --> Z
+partition "Customer" {
+  start
+  :Click Resubmit for invalid payment;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C user;
-  class D,F,G,H,I system;
-  class E decision;
+partition "System" {
+  :Navigate to Payment Details page with resubmission notice;
+  :Display modal explaining readable details and matching reference requirement;
+}
+
+partition "Customer" {
+  :Close notice after reading;
+  :Enter corrected reference number;
+  :Upload clearer payment proof;
+  :Click Submit Proof;
+}
+
+partition "System" {
+  :Validate corrected payment details;
+}
+
+if (Corrected proof accepted?) then (Yes)
+  partition "System" {
+    :Show successful proof submission message;
+    :Redirect to Customer Dashboard;
+  }
+else (No)
+  partition "System" {
+    :Show validation message for corrected proof;
+  }
+endif
+
+partition "Customer" {
+  stop
+}
+@enduml
 ```
 
-## Decision Support Actions
+## Staff: Sign In and Allowed Module Access
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open decision support]
-    C[Review insights]
-    D{Choose decision action}
-    E[Refresh insights]
-    F[Generate promo for idle units]
-    G[Assign recommended vehicle]
-    H[Approve branch transfer]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/components/site/SignInDialog.tsx`
+- `src/components/admin/AdminShell.tsx`
+- Staff sidebar with Bookings and Calendar modules
 
-  subgraph System["System"]
-    direction TB
-    I[Load demand forecast]
-    J[Analyze utilization and idle vehicles]
-    K[Generate recommendations]
-    L[Recalculate insights]
-    M[Create promo recommendation]
-    N[Update vehicle assignment]
-    O[Update branch allocation]
-    P[Notify affected staff]
-  end
+```plantuml
+@startuml
+title Staff: Sign In and Allowed Module Access
 
-  A --> B --> I --> J --> K --> C --> D
-  D -- Refresh --> E --> L --> C
-  D -- Promo --> F --> M --> Z
-  D -- Assign vehicle --> G --> N --> P --> Z
-  D -- Approve transfer --> H --> O --> P --> Z
+partition "Staff" {
+  start
+  :Open Sign in page;
+  :Enter staff credentials;
+  :Submit sign in;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,E,F,G,H user;
-  class I,J,K,L,M,N,O,P system;
-  class D decision;
+partition "System" {
+  :Validate staff account;
+  :Create staff session;
+  :Load staff workspace;
+  :Display Bookings and Calendar modules;
+}
+
+if (Staff opens permitted module?) then (Yes)
+  partition "System" {
+    :Display selected operations page;
+  }
+else (No)
+  partition "System" {
+    :Redirect staff to permitted operations area;
+  }
+endif
+
+partition "Staff" {
+  stop
+}
+@enduml
 ```
 
-## Branch Management
+## Staff: Booking Queue Status Management
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open branches page]
-    C[Review branch performance]
-    D{Create new branch?}
-    E[Enter branch details]
-    F[Submit branch]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.bookings.tsx`
+- Search, status filter, branch filter, Export button
+- Manage button, status dropdown, Save and Cancel buttons
 
-  subgraph System["System"]
-    direction TB
-    G[Load branch performance]
-    H[Show active rentals, fleet, demand, and revenue]
-    I[Validate branch details]
-    J{Details valid?}
-    K[Create branch record]
-    L[Show validation errors]
-  end
+```plantuml
+@startuml
+title Staff: Booking Queue Status Management
 
-  A --> B --> G --> H --> C --> D
-  D -- No --> Z
-  D -- Yes --> E --> F --> I --> J
-  J -- Yes --> K --> Z
-  J -- No --> L --> E
+partition "Staff" {
+  start
+  :Open Bookings module;
+  :Search or filter booking queue;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,E,F user;
-  class G,H,I,K system;
-  class D,J decision;
-  class L error;
+partition "System" {
+  :Display matching booking rows;
+}
+
+if (Bookings found?) then (Yes)
+  partition "Staff" {
+    :Click Manage on selected booking;
+  }
+  partition "System" {
+    :Turn status badge into editable status dropdown;
+    :Show Save and Cancel actions;
+  }
+  partition "Staff" {
+    :Select Pending, Confirmed, Ongoing, Completed, or Cancelled;
+  }
+  if (Save change?) then (Yes)
+    partition "System" {
+      :Update booking status;
+      :Refresh filtered booking queue;
+    }
+  else (Cancel)
+    partition "System" {
+      :Discard draft status and restore current row;
+    }
+  endif
+else (No)
+  partition "System" {
+    :Display no matching bookings state;
+  }
+endif
+
+partition "Staff" {
+  stop
+}
+@enduml
 ```
 
-## Users and Roles Management
+## Staff: Reservation Calendar and Dispatch Review
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open users and roles]
-    C[Review roles and accounts]
-    D{Choose user action}
-    E[Add user]
-    F[Edit user]
-    G[Submit user changes]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.calendar.tsx`
+- Day, Week, Month controls, New Event button, calendar grid
+- Upcoming pickups, Service and returns lists
 
-  subgraph System["System"]
-    direction TB
-    H[Verify owner permission]
-    I{Owner allowed?}
-    J[Load role summaries]
-    K[Load account list]
-    L[Validate user details]
-    M{Details valid?}
-    N[Create or update account]
-    O[Apply role permissions]
-    P[Notify user]
-    Q[Redirect to allowed page]
-    R[Show validation errors]
-  end
+```plantuml
+@startuml
+title Staff: Reservation Calendar and Dispatch Review
 
-  A --> B --> H --> I
-  I -- No --> Q --> Z
-  I -- Yes --> J --> K --> C --> D
-  D -- Add --> E --> G --> L --> M
-  D -- Edit --> F --> G --> L --> M
-  D -- View only --> Z
-  M -- Yes --> N --> O --> P --> Z
-  M -- No --> R --> D
+partition "Staff" {
+  start
+  :Open Calendar module;
+  :Choose Day, Week, or Month view;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,E,F,G user;
-  class H,J,K,L,N,O,P system;
-  class D,I,M decision;
-  class Q,R error;
+partition "System" {
+  :Display reservation, return, maintenance, and active rental events;
+  :Show upcoming pickups and service returns;
+}
+
+partition "Staff" {
+  :Move to previous or next calendar period;
+}
+
+partition "System" {
+  :Refresh calendar grid for selected period;
+}
+
+if (Dispatch item requires action?) then (Yes)
+  partition "Staff" {
+    :Review pickup, return, or maintenance event details;
+  }
+  partition "System" {
+    :Keep dispatch schedule updated for operations;
+  }
+else (No)
+  partition "System" {
+    :Continue displaying current dispatch calendar;
+  }
+endif
+
+partition "Staff" {
+  stop
+}
+@enduml
 ```
 
-## Settings Management
+## Owner: Dashboard Monitoring and Export
 
-```mermaid
-flowchart TD
-  subgraph Owner["Owner"]
-    direction TB
-    A([Start])
-    B[Open settings page]
-    C[Edit business profile]
-    D[Edit pricing and fees]
-    E[Manage integrations]
-    F{Choose settings action}
-    G[Save changes]
-    H[Discard changes]
-    I[Connect integration]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.index.tsx`
+- Admin Dashboard KPIs, charts, latest bookings, alerts, Export report button
 
-  subgraph System["System"]
-    direction TB
-    J[Verify owner permission]
-    K{Owner allowed?}
-    L[Load current settings]
-    M[Validate settings]
-    N{Settings valid?}
-    O[Persist settings]
-    P[Apply updated rules]
-    Q[Restore previous values]
-    R[Start integration connection]
-    S[Show validation errors]
-    T[Redirect to allowed page]
-  end
+```plantuml
+@startuml
+title Owner: Dashboard Monitoring and Export
 
-  A --> B --> J --> K
-  K -- No --> T --> Z
-  K -- Yes --> L --> C --> D --> E --> F
-  F -- Save --> G --> M --> N
-  N -- Yes --> O --> P --> Z
-  N -- No --> S --> C
-  F -- Discard --> H --> Q --> Z
-  F -- Connect --> I --> R --> Z
+partition "Owner" {
+  start
+  :Sign in as owner;
+  :Open Dashboard;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,G,H,I user;
-  class J,L,M,O,P,Q,R system;
-  class F,K,N decision;
-  class S,T error;
+partition "System" {
+  :Display revenue, bookings, utilization, and payment KPIs;
+  :Display charts, alerts, recent activity, and latest bookings;
+}
+
+partition "Owner" {
+  :Review dashboard indicators;
+}
+
+if (Export report requested?) then (Yes)
+  partition "Owner" {
+    :Click Export report;
+  }
+  partition "System" {
+    :Generate dashboard report export;
+    :Show export completion feedback;
+  }
+else (No)
+  partition "System" {
+    :Keep dashboard metrics visible for monitoring;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Staff Sign In and Restricted Access
+## Owner: Reports and Analytics Review
 
-```mermaid
-flowchart TD
-  subgraph Staff["Staff"]
-    direction TB
-    A([Start])
-    B[Open sign-in page]
-    C[Enter staff credentials]
-    D[Submit login form]
-    E[Open admin area]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.reports.tsx`
+- Reports and Analytics KPIs, monthly revenue, utilization, branch performance, top categories
 
-  subgraph System["System"]
-    direction TB
-    F[Validate credentials]
-    G{Credentials valid?}
-    H{Role is Staff?}
-    I[Create staff session]
-    J[Limit navigation to bookings and calendar]
-    K[Redirect to bookings page]
-    L[Show login error]
-    M[Redirect to role dashboard]
-  end
+```plantuml
+@startuml
+title Owner: Reports and Analytics Review
 
-  A --> B --> C --> D --> F --> G
-  G -- No --> L --> Z
-  G -- Yes --> H
-  H -- Yes --> I --> E --> J --> K --> Z
-  H -- No --> M --> Z
+partition "Owner" {
+  start
+  :Open Reports and Analytics;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E user;
-  class F,I,J,K,M system;
-  class G,H decision;
-  class L error;
+partition "System" {
+  :Display revenue, booking, utilization, and average ticket KPIs;
+  :Display monthly revenue chart;
+  :Display utilization, branch performance, and top category reports;
+}
+
+partition "Owner" {
+  :Analyze operational and financial report sections;
+}
+
+if (Performance issue identified?) then (Yes)
+  partition "Owner" {
+    :Use report insight for decision support or operations review;
+  }
+  partition "System" {
+    :Keep report context available for follow-up action;
+  }
+else (No)
+  partition "System" {
+    :Continue displaying analytics overview;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Staff Booking Queue Management
+## Owner: Decision Support and Branch Allocation
 
-```mermaid
-flowchart TD
-  subgraph Staff["Staff"]
-    direction TB
-    A([Start])
-    B[Open bookings page]
-    C[Search booking queue]
-    D[Filter by status or branch]
-    E{Pending booking selected?}
-    F[Approve booking]
-    G[Reject booking]
-    H[Manage existing booking]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.decisions.tsx`
+- Demand forecasting, vehicle utilization, idle vehicles, branch demand
+- Recommend vehicle button, branch allocation recommendation cards, Approve transfer button
 
-  subgraph System["System"]
-    direction TB
-    I[Verify staff access]
-    J[Load booking records]
-    K[Display filtered results]
-    L[Update booking status]
-    M[Notify customer]
-    N[Load booking details]
-    O[Redirect if page not allowed]
-    P{Allowed staff page?}
-    Q{Approve?}
-  end
+```plantuml
+@startuml
+title Owner: Decision Support and Branch Allocation
 
-  A --> B --> I --> P{Allowed staff page?}
-  P -- No --> O --> Z
-  P -- Yes --> J --> C --> D --> K --> E
-  E -- Yes --> Q{Approve?}
-  Q -- Yes --> F --> L --> M --> Z
-  Q -- No --> G --> L --> M --> Z
-  E -- No --> H --> N --> Z
+partition "Owner" {
+  start
+  :Open Decision Support;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,F,G,H user;
-  class I,J,K,L,M,N system;
-  class E,P,Q decision;
-  class O error;
+partition "System" {
+  :Load demand forecast, fleet utilization, idle vehicle, and branch demand data;
+  :Load weather, traffic, and fuel factors;
+  :Compute branch allocation recommendations and confidence levels;
+}
+
+partition "Owner" {
+  :Review forecast chart and utilization table;
+  :Click Recommend vehicle when vehicle guidance is needed;
+}
+
+partition "System" {
+  :Display recommended vehicle result and context-aware insights;
+  :Display three branch allocation transfer recommendations;
+}
+
+partition "Owner" {
+  :Review score, factor chips, branch route, and confidence badge;
+}
+
+if (Transfer should be approved?) then (Yes)
+  partition "Owner" {
+    :Click Approve transfer;
+  }
+  partition "System" {
+    :Record transfer approval and update recommendation state;
+  }
+else (No)
+  partition "Owner" {
+    :Leave recommendation for later review;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Staff Calendar Review
+## Owner: Booking Management and Export
 
-```mermaid
-flowchart TD
-  subgraph Staff["Staff"]
-    direction TB
-    A([Start])
-    B[Open calendar page]
-    C[Review pickups and reservations]
-    D[Review returns and maintenance]
-    E{Add event?}
-    F[Enter event details]
-    G[Submit event]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.bookings.tsx`
+- Search field, status and branch filters, More filters, Export button
+- Manage status dropdown, Save and Cancel buttons
 
-  subgraph System["System"]
-    direction TB
-    H[Verify staff access]
-    I[Load calendar events]
-    J[Display month schedule]
-    K[Validate event details]
-    L{Event valid?}
-    M[Save calendar event]
-    N[Refresh calendar]
-    O[Show validation errors]
-  end
+```plantuml
+@startuml
+title Owner: Booking Management and Export
 
-  A --> B --> H --> I --> J --> C --> D --> E
-  E -- No --> Z
-  E -- Yes --> F --> G --> K --> L
-  L -- Yes --> M --> N --> Z
-  L -- No --> O --> F
+partition "Owner" {
+  start
+  :Open Bookings module;
+  :Search by ID, customer, vehicle, or plate;
+  :Apply status or branch filter;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,F,G user;
-  class H,I,J,K,M,N system;
-  class E,L decision;
-  class O error;
+partition "System" {
+  :Display filtered booking management table;
+}
+
+if (Export requested?) then (Yes)
+  partition "Owner" {
+    :Click Export;
+  }
+  partition "System" {
+    :Generate booking report export;
+  }
+endif
+
+if (Booking status needs update?) then (Yes)
+  partition "Owner" {
+    :Click Manage;
+    :Choose new booking status;
+  }
+  if (Save status?) then (Yes)
+    partition "System" {
+      :Save updated booking status;
+      :Refresh status badge and filtered rows;
+    }
+  else (Cancel)
+    partition "System" {
+      :Restore original booking status;
+    }
+  endif
+else (No)
+  partition "System" {
+    :Keep booking queue unchanged;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Customer Registration
+## Owner: Customer Records and Requirement Verification
 
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Open sign-up form]
-    C[Enter name, email, phone, and password]
-    D[Confirm password]
-    E[Submit registration]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.customers.tsx`
+- Customer search, customer table, customer detail panel
+- Uploaded requirements list, Approve and Reject buttons
 
-  subgraph System["System"]
-    direction TB
-    F[Validate required fields]
-    G[Validate password confirmation]
-    H[Check duplicate email]
-    I{Registration valid?}
-    J[Create customer account]
-    K[Set account status to Active]
-    L[Show account created message]
-    M[Show validation or duplicate error]
-  end
+```plantuml
+@startuml
+title Owner: Customer Records and Requirement Verification
 
-  A --> B --> C --> D --> E --> F --> G --> H --> I
-  I -- Yes --> J --> K --> L --> Z
-  I -- No --> M --> C
+partition "Owner" {
+  start
+  :Open Customers module;
+  :Search customer by name, email, or phone;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E user;
-  class F,G,H,J,K,L system;
-  class I decision;
-  class M error;
+partition "System" {
+  :Display matching customer records;
+}
+
+if (Customer selected?) then (Yes)
+  partition "Owner" {
+    :Select customer row;
+  }
+  partition "System" {
+    :Display customer profile, rental summary, and uploaded requirements;
+  }
+  partition "Owner" {
+    :Review driver's license, valid ID, and selfie requirement files;
+  }
+  if (Requirements valid?) then (Yes)
+    partition "Owner" {
+      :Click Approve;
+    }
+    partition "System" {
+      :Update verification status to approved;
+    }
+  else (No)
+    partition "Owner" {
+      :Click Reject;
+    }
+    partition "System" {
+      :Update verification status and request correction;
+    }
+  endif
+else (No)
+  partition "System" {
+    :Display empty or unchanged detail panel;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Customer Sign In
+## Owner: Payment Proof Verification
 
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Open sign-in page]
-    C[Enter email or name and password]
-    D[Submit login form]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.payments.tsx`
+- Payment queue, status KPIs, proof preview panel
+- Verify payment button, reject action button
 
-  subgraph System["System"]
-    direction TB
-    E[Validate customer credentials]
-    F{Credentials valid?}
-    G[Create customer session]
-    H[Redirect to customer landing page]
-    I[Show login error]
-  end
+```plantuml
+@startuml
+title Owner: Payment Proof Verification
 
-  A --> B --> C --> D --> E --> F
-  F -- Yes --> G --> H --> Z
-  F -- No --> I --> C
+partition "Owner" {
+  start
+  :Open Payments module;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D user;
-  class E,G,H system;
-  class F decision;
-  class I error;
+partition "System" {
+  :Display verified, pending, and invalid payment KPIs;
+  :Display payment queue and selected proof preview;
+}
+
+partition "Owner" {
+  :Select payment record;
+  :Review receipt preview, method, reference, and amount details;
+}
+
+if (Proof matches transaction?) then (Yes)
+  partition "Owner" {
+    :Click Verify payment;
+  }
+  partition "System" {
+    :Mark payment as paid;
+    :Update payment queue and KPI cards;
+  }
+else (No)
+  partition "Owner" {
+    :Click reject action;
+  }
+  partition "System" {
+    :Mark payment as invalid;
+    :Update payment queue and customer payment status;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Customer Vehicle Search
+## Owner: Fleet Management, Add Vehicle, and Status Control
 
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Choose pickup branch]
-    C[Choose pickup date]
-    D[Choose vehicle category]
-    E[Click Search cars]
-    F[Change filters]
-    G[Request booking help]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.fleet.tsx`
+- Fleet KPI cards, Add vehicle button, grid/table toggle, vehicle cards/table rows
+- Add Vehicle modal, status dropdowns, Service now button
 
-  subgraph System["System"]
-    direction TB
-    H[Validate search parameters]
-    I[Find matching vehicles]
-    J{Vehicles found?}
-    K[Show matching vehicle list]
-    L[Show no vehicles found message]
-    M[Open booking workflow]
-    N{Customer next action?}
-  end
+```plantuml
+@startuml
+title Owner: Fleet Management, Add Vehicle, and Status Control
 
-  A --> B --> C --> D --> E --> H --> I --> J
-  J -- Yes --> K --> Z
-  J -- No --> L --> N{Customer next action?}
-  N -- Change filters --> F --> B
-  N -- Request help --> G --> M --> Z
+partition "Owner" {
+  start
+  :Open Fleet Management;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,F,G user;
-  class H,I,K,M system;
-  class J,N decision;
-  class L error;
+partition "System" {
+  :Display fleet summary counts;
+  :Display vehicle grid or table with vehicle details and status controls;
+}
+
+partition "Owner" {
+  :Search vehicles or filter by status;
+}
+
+partition "System" {
+  :Refresh visible fleet rows and cards;
+}
+
+if (Add new vehicle?) then (Yes)
+  partition "Owner" {
+    :Click Add vehicle;
+    :Enter plate, chassis, make, model, color, seats, type, branch, status, transmission, rate, and condition;
+    :Submit Add vehicle form;
+  }
+  partition "System" {
+    :Validate vehicle information;
+  }
+  if (Vehicle form valid?) then (Yes)
+    partition "System" {
+      :Create vehicle record;
+      :Add vehicle to fleet view and summary counts;
+    }
+  else (No)
+    partition "System" {
+      :Display vehicle form validation message;
+    }
+  endif
+else (No)
+  if (Change vehicle status?) then (Yes)
+    partition "Owner" {
+      :Select Available, Reserved, or Rented status;
+    }
+    partition "System" {
+      :Update vehicle status and fleet summary count;
+    }
+  else (Open service handoff)
+    partition "Owner" {
+      :Click Service now on vehicle;
+    }
+    partition "System" {
+      :Open maintenance record dialog for selected vehicle;
+    }
+  endif
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Browse Vehicles and Reserve
+## Owner: Maintenance Scheduling and Service Status Tracking
 
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Open vehicle list]
-    C[Filter by type]
-    D[Filter by branch]
-    E[Review vehicle card]
-    F{Vehicle available?}
-    G[Click Reserve]
-    H[Click Join waitlist]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.maintenance.tsx`
+- `src/components/admin/MaintenanceRecordDialog.tsx`
+- Schedule service button, maintenance dialog, service schedule table, action status dropdown
 
-  subgraph System["System"]
-    direction TB
-    I[Update vehicle results]
-    J[Open booking workflow with selected vehicle]
-    K[Open waitlist or assisted booking request]
-    L[Show selected vehicle details]
-  end
+```plantuml
+@startuml
+title Owner: Maintenance Scheduling and Service Status Tracking
 
-  A --> B --> C --> D --> I --> E --> L --> F
-  F -- Yes --> G --> J --> Z
-  F -- No --> H --> K --> Z
+partition "Owner" {
+  start
+  :Open Maintenance module;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,G,H user;
-  class I,J,K,L system;
-  class F decision;
+partition "System" {
+  :Display overdue, in-progress, scheduled, and service spend KPIs;
+  :Display service schedule table sorted by urgency;
+  :Display fleet downtime chart;
+}
+
+if (Schedule new service?) then (Yes)
+  partition "Owner" {
+    :Click Schedule service;
+    :Select vehicle from dropdown;
+    :Enter maintenance type, description, status, dates, cost, and assigned staff;
+    :Click Save record;
+  }
+  partition "System" {
+    :Validate vehicle and service details;
+  }
+  if (Service record valid?) then (Yes)
+    partition "System" {
+      :Save maintenance record;
+      :Update schedule table and KPIs;
+    }
+  else (No)
+    partition "System" {
+      :Keep dialog open until required service details are complete;
+    }
+  endif
+else (Update existing status)
+  partition "Owner" {
+    :Use Action dropdown on service row;
+    :Choose Scheduled, In Progress, Overdue, or Completed;
+  }
+  partition "System" {
+    :Update status badge, KPIs, and urgency order;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Booking Request
+## Owner: Operational Notification Triage
 
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Open booking page]
-    C[Select vehicle]
-    D[Select pickup and return branches]
-    E[Enter pickup and return date/time]
-    F[Enter contact details]
-    G[Accept rental policies]
-    H[Submit booking request]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.notifications.tsx`
+- Summary cards, filter chips, notification groups
+- Mark all read, Clear archive, row actions
 
-  subgraph System["System"]
-    direction TB
-    I[Check customer session]
-    J{Customer signed in?}
-    K[Validate booking details]
-    L[Validate return is after pickup]
-    M[Calculate estimated total]
-    N{Booking valid?}
-    O[Create booking request]
-    P[Set booking status to Pending]
-    Q[Notify operations team]
-    R[Show booking confirmation]
-    S[Redirect to customer dashboard]
-    T[Redirect to sign-in page]
-    U[Show field validation errors]
-  end
+```plantuml
+@startuml
+title Owner: Operational Notification Triage
 
-  A --> B --> I --> J
-  J -- No --> T --> Z
-  J -- Yes --> C --> D --> E --> F --> G --> H --> K --> L --> M --> N
-  N -- Yes --> O --> P --> Q --> R --> S --> Z
-  N -- No --> U --> C
+partition "Owner" {
+  start
+  :Open Notifications module;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,F,G,H user;
-  class I,K,L,M,O,P,Q,R,S system;
-  class J,N decision;
-  class T,U error;
+partition "System" {
+  :Display unread, needs action, operational alert, and update counts;
+  :Group notifications by priority and category;
+}
+
+partition "Owner" {
+  :Select filter chip or review grouped notifications;
+}
+
+partition "System" {
+  :Filter notifications by selected category;
+}
+
+if (Notification action needed?) then (Yes)
+  partition "Owner" {
+    :Click notification action such as Review booking, View payment, View service, Manage fleet, or Verify ID;
+  }
+  partition "System" {
+    :Open related operations context;
+  }
+else (No)
+  partition "Owner" {
+    :Click Mark all read or Clear archive;
+  }
+  partition "System" {
+    :Update notification state and counts;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Requirement Submission
+## Owner: Users and Roles Management
 
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Open customer dashboard]
-    C[Upload valid ID]
-    D[Upload driver's license]
-    E[Submit requirements]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.users.tsx`
+- Role summary cards, Accounts table, Edit role button, role dropdown, Save and Cancel buttons
 
-  subgraph System["System"]
-    direction TB
-    F[Check customer session]
-    G{Customer signed in?}
-    H[Validate uploaded files]
-    I{Files accepted?}
-    J[Save requirement files]
-    K[Set verification to Pending Verification]
-    L[Notify owner or staff]
-    M[Show upload success]
-    N[Redirect to sign-in page]
-    O[Show upload error]
-  end
+```plantuml
+@startuml
+title Owner: Users and Roles Management
 
-  A --> B --> F --> G
-  G -- No --> N --> Z
-  G -- Yes --> C --> D --> E --> H --> I
-  I -- Yes --> J --> K --> L --> M --> Z
-  I -- No --> O --> C
+partition "Owner" {
+  start
+  :Open Users and Roles;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E user;
-  class F,H,J,K,L,M system;
-  class G,I decision;
-  class N,O error;
+partition "System" {
+  :Display role summary cards and account table;
+}
+
+partition "Owner" {
+  :Select account row action;
+}
+
+if (Owner can manage roles?) then (Yes)
+  partition "Owner" {
+    :Click Edit role;
+    :Choose Business Owner, Staff, or Customer role;
+  }
+  if (Save role?) then (Yes)
+    partition "System" {
+      :Update account role;
+      :Refresh role summary cards;
+    }
+  else (Cancel)
+    partition "System" {
+      :Discard role edit and restore account row;
+    }
+  endif
+else (No)
+  partition "System" {
+    :Display view-only account action;
+  }
+endif
+
+partition "Owner" {
+  stop
+}
+@enduml
 ```
 
-## Payment Proof Submission
+## Owner: Branch Monitoring and Branch Creation
 
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Open customer dashboard]
-    C[Enter payment reference number]
-    D[Upload proof of payment]
-    E[Submit payment proof]
-    Z([End])
-  end
+Based on frontend files/screens:
+- `src/routes/admin.branches.tsx`
+- Branch cards, demand badges, active rentals, fleet count, demand score, monthly revenue
+- New branch button
 
-  subgraph System["System"]
-    direction TB
-    F[Check customer session]
-    G{Customer signed in?}
-    H[Validate reference and proof]
-    I{Payment proof accepted?}
-    J[Save payment proof]
-    K[Set payment status to Pending verification]
-    L[Notify owner for review]
-    M[Show upload success]
-    N[Redirect to sign-in page]
-    O[Show payment proof error]
-  end
+```plantuml
+@startuml
+title Owner: Branch Monitoring and Branch Creation
 
-  A --> B --> F --> G
-  G -- No --> N --> Z
-  G -- Yes --> C --> D --> E --> H --> I
-  I -- Yes --> J --> K --> L --> M --> Z
-  I -- No --> O --> C
+partition "Owner" {
+  start
+  :Open Branches module;
+}
 
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E user;
-  class F,H,J,K,L,M system;
-  class G,I decision;
-  class N,O error;
-```
+partition "System" {
+  :Display branch performance cards and demand indicators;
+}
 
-## Customer Dashboard Tracking
+partition "Owner" {
+  :Review active rentals, fleet count, demand score, revenue, and trend;
+}
 
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Open customer dashboard]
-    C[Review payment status]
-    D[Review notifications]
-    E[Review rental policies]
-    F{Action needed?}
-    G[Upload requirements]
-    H[Upload payment proof]
-    Z([End])
-  end
+if (Create new branch?) then (Yes)
+  partition "Owner" {
+    :Click New branch;
+    :Enter branch information;
+    :Submit new branch record;
+  }
+  partition "System" {
+    :Validate branch details;
+  }
+  if (Branch details valid?) then (Yes)
+    partition "System" {
+      :Add branch to branch monitoring view;
+    }
+  else (No)
+    partition "System" {
+      :Show branch form validation message;
+    }
+  endif
+else (No)
+  partition "System" {
+    :Continue displaying branch monitoring dashboard;
+  }
+endif
 
-  subgraph System["System"]
-    direction TB
-    I[Check customer session]
-    J{Customer signed in?}
-    K[Load customer bookings]
-    L[Load payment statuses]
-    M[Load notifications and updates]
-    N[Load rental policies]
-    O[Redirect to sign-in page]
-  end
-
-  A --> B --> I --> J
-  J -- No --> O --> Z
-  J -- Yes --> K --> L --> M --> N --> C --> D --> E --> F
-  F -- Requirements needed --> G --> Z
-  F -- Payment needed --> H --> Z
-  F -- No --> Z
-
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E,G,H user;
-  class I,K,L,M,N system;
-  class F,J decision;
-  class O error;
-```
-
-## Contact Inquiry
-
-```mermaid
-flowchart TD
-  subgraph VisitorOrCustomer["Visitor or Customer"]
-    direction TB
-    A([Start])
-    B[Open contact page]
-    C[Enter name, email, subject, and message]
-    D[Submit message]
-    E[Use phone or email contact link]
-    Z([End])
-  end
-
-  subgraph System["System"]
-    direction TB
-    F[Validate contact form]
-    G{Message valid?}
-    H[Save inquiry]
-    I[Notify support team]
-    J[Show message sent confirmation]
-    K[Show validation errors]
-    L[Open phone or email app]
-    M{Choose contact method?}
-  end
-
-  A --> B --> M{Choose contact method?}
-  M -- Form --> C --> D --> F --> G
-  G -- Yes --> H --> I --> J --> Z
-  G -- No --> K --> C
-  M -- Direct link --> E --> L --> Z
-
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D,E user;
-  class F,H,I,J,L system;
-  class G,M decision;
-  class K error;
-```
-
-## Session and Role Authorization
-
-```mermaid
-flowchart TD
-  subgraph User["Owner, Staff, or Customer"]
-    direction TB
-    A([Start])
-    B[Request protected page]
-    Z([End])
-  end
-
-  subgraph System["System"]
-    direction TB
-    C[Check active session]
-    D{Session exists?}
-    E[Read account role]
-    F{Role can access page?}
-    G[Load requested page]
-    H[Redirect to allowed dashboard]
-    I[Redirect to sign-in page]
-  end
-
-  A --> B --> C --> D
-  D -- No --> I --> Z
-  D -- Yes --> E --> F
-  F -- Yes --> G --> Z
-  F -- No --> H --> Z
-
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B user;
-  class C,E,G,H system;
-  class D,F decision;
-  class I error;
-```
-
-## OAuth Sign In or Sign Up
-
-```mermaid
-flowchart TD
-  subgraph Customer["Customer"]
-    direction TB
-    A([Start])
-    B[Choose Google, Facebook, or Apple]
-    Z([End])
-  end
-
-  subgraph System["System"]
-    direction TB
-    C[Start OAuth provider flow]
-    D[Validate provider response]
-    E{OAuth successful?}
-    F[Create or retrieve customer account]
-    G[Create customer session]
-    H[Redirect to customer landing page]
-    I[Show OAuth error]
-  end
-
-  subgraph OAuthProvider["OAuth Provider"]
-    direction TB
-    J[Authenticate customer]
-    K[Return authorization result]
-  end
-
-  A --> B --> C --> J --> K --> D --> E
-  E -- Yes --> F --> G --> H --> Z
-  E -- No --> I --> Z
-
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef provider fill:#FFF0CC,stroke:#D6A23A,color:#2B1B00;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B user;
-  class C,D,F,G,H system;
-  class J,K provider;
-  class E decision;
-  class I error;
-```
-
-## Logout
-
-```mermaid
-flowchart TD
-  subgraph User["Owner, Staff, or Customer"]
-    direction TB
-    A([Start])
-    B[Click Sign out]
-    Z([End])
-  end
-
-  subgraph System["System"]
-    direction TB
-    C[Identify active session type]
-    D{Session type?}
-    E[End customer session]
-    F[Redirect to public home page]
-    G[End admin session]
-    H[Redirect to sign-in page]
-    I[Show already signed out state]
-  end
-
-  A --> B --> C --> D
-  D -- Customer --> E --> F --> Z
-  D -- Owner or Staff --> G --> H --> Z
-  D -- None --> I --> Z
-
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B user;
-  class C,E,F,G,H system;
-  class D decision;
-  class I error;
-```
-
-## Error and Not Found Recovery
-
-```mermaid
-flowchart TD
-  subgraph User["User"]
-    direction TB
-    A([Start])
-    B[Open invalid page or encounter page error]
-    C[Click Go home]
-    D[Click Try again]
-    Z([End])
-  end
-
-  subgraph System["System"]
-    direction TB
-    E{Problem type?}
-    F[Show not found message]
-    G[Show page load error]
-    H[Redirect to home page]
-    I[Retry page load]
-    J{Retry successful?}
-    K[Load page]
-    L[Show error again]
-    M{User action?}
-  end
-
-  A --> B --> E
-  E -- Page not found --> F --> C --> H --> Z
-  E -- System error --> G --> M{User action?}
-  M -- Go home --> C --> H --> Z
-  M -- Try again --> D --> I --> J
-  J -- Yes --> K --> Z
-  J -- No --> L --> M
-
-  classDef user fill:#D7ECFF,stroke:#5B9BD5,color:#0B1B2B;
-  classDef system fill:#DDF5DD,stroke:#4CAF50,color:#0B1B2B;
-  classDef decision fill:#E9D9FF,stroke:#7B61FF,color:#1B102B;
-  classDef error fill:#FFD9D9,stroke:#FF4D4F,color:#2B0B0B;
-  classDef terminal fill:#FFB457,stroke:#D87900,color:#2B1600;
-  class A,Z terminal;
-  class B,C,D user;
-  class H,I,K system;
-  class E,J,M decision;
-  class F,G,L error;
+partition "Owner" {
+  stop
+}
+@enduml
 ```

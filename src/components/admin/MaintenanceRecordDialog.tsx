@@ -23,6 +23,13 @@ export type MaintenanceRecordDraft = {
   created_at: string;
 };
 
+export type MaintenanceVehicleOption = {
+  id: string;
+  name: string;
+  plate: string;
+  branch: string;
+};
+
 const typeOptions = [
   "Preventive Maintenance",
   "Brake Service",
@@ -36,12 +43,14 @@ const typeOptions = [
 export function MaintenanceRecordDialog({
   open,
   draft,
+  vehicles,
   onDraftChange,
   onOpenChange,
   onSave,
 }: {
   open: boolean;
   draft: MaintenanceRecordDraft;
+  vehicles: MaintenanceVehicleOption[];
   onDraftChange: (draft: MaintenanceRecordDraft) => void;
   onOpenChange: (open: boolean) => void;
   onSave?: () => void;
@@ -53,6 +62,9 @@ export function MaintenanceRecordDialog({
     onDraftChange({ ...draft, [key]: value });
   }
 
+  const canSave = Boolean(draft.vehicle_id);
+  const saveTitle = canSave ? "Save record" : "Select a vehicle first";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
@@ -61,6 +73,33 @@ export function MaintenanceRecordDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-2 sm:grid-cols-2">
+          <Field label="Vehicle">
+            <TSelect
+              value={draft.vehicle_id}
+              onChange={(event) => {
+                const nextVehicleId = event.target.value;
+                const selected = vehicles.find((v) => v.id === nextVehicleId);
+
+                onDraftChange({
+                  ...draft,
+                  vehicle_id: nextVehicleId,
+                  description:
+                    draft.description.trim() || !selected
+                      ? draft.description
+                      : `${selected.name} (${selected.plate}) - ${draft.maintenance_type}`,
+                });
+              }}
+            >
+              <option value="" disabled>
+                Select vehicle
+              </option>
+              {vehicles.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name} ({v.plate}) — {v.branch}
+                </option>
+              ))}
+            </TSelect>
+          </Field>
           <Field label="Maintenance Type">
             <TSelect
               value={draft.maintenance_type}
@@ -123,7 +162,7 @@ export function MaintenanceRecordDialog({
               onChange={(event) => updateDraft("recorded_by", event.target.value)}
             />
           </Field>
-          <Field label="Created At">
+          <Field label="Date recorded">
             <TInput value={draft.created_at} readOnly />
           </Field>
           <Field label="Description" className="sm:col-span-2">
@@ -141,6 +180,8 @@ export function MaintenanceRecordDialog({
           <Btn onClick={() => onOpenChange(false)}>Cancel</Btn>
           <Btn
             variant="primary"
+            disabled={!canSave}
+            title={saveTitle}
             onClick={() => {
               onSave?.();
               onOpenChange(false);

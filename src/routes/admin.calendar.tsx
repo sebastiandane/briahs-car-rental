@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Card, CardHeader, PageHeader, Btn } from "@/components/admin/ui";
+import { Card, CardHeader, PageHeader } from "@/components/admin/ui";
 
 export const Route = createFileRoute("/admin/calendar")({ component: CalendarPage });
 
@@ -45,16 +45,6 @@ function CalendarPage() {
       <PageHeader
         title="Calendar"
         subtitle="Unified view of pickups, returns, reservations and maintenance."
-        actions={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
-              {["Day", "Week", "Month"].map((v, i) => (
-                <button key={v} className={`h-7 rounded px-3 text-xs font-medium ${i === 2 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{v}</button>
-              ))}
-            </div>
-            <Btn variant="primary">+ Event</Btn>
-          </div>
-        }
       />
 
       <Card>

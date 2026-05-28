@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Check, X, Plus, Filter, Download } from "lucide-react";
+import { Filter, Download } from "lucide-react";
 import { Badge, Btn, Card, PageHeader, TInput, TSelect, Toolbar } from "@/components/admin/ui";
-import { bookings, peso, type BookingStatus } from "@/data/admin";
+import { bookings, type BookingStatus } from "@/data/admin";
 
 export const Route = createFileRoute("/admin/bookings")({ component: BookingsPage });
 
@@ -13,13 +13,22 @@ function BookingsPage() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<(typeof statuses)[number]>("All");
   const [branch, setBranch] = useState<(typeof branches)[number]>("All branches");
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, BookingStatus>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftStatus, setDraftStatus] = useState<BookingStatus>("Pending");
 
   const rows = useMemo(() => bookings.filter((b) => {
-    if (status !== "All" && b.status !== status) return false;
+    const effectiveStatus = statusOverrides[b.id] ?? b.status;
+
+    if (status !== "All" && effectiveStatus !== status) return false;
     if (branch !== "All branches" && b.branch !== branch) return false;
     if (q && ![b.id, b.customer, b.vehicle, b.plate].join(" ").toLowerCase().includes(q.toLowerCase())) return false;
     return true;
-  }), [q, status, branch]);
+  }), [q, status, branch, statusOverrides]);
+
+  function getEffectiveStatus(bookingId: string, base: BookingStatus) {
+    return statusOverrides[bookingId] ?? base;
+  }
 
   return (
     <div>
@@ -29,7 +38,6 @@ function BookingsPage() {
         actions={
           <>
             <Btn><Download className="h-4 w-4" /> Export</Btn>
-            <Btn variant="primary"><Plus className="h-4 w-4" /> New booking</Btn>
           </>
         }
       />
@@ -52,12 +60,16 @@ function BookingsPage() {
             <thead className="sticky top-0 z-10 bg-card text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr className="border-b border-border">
                 <Th>ID</Th><Th>Customer</Th><Th>Vehicle</Th><Th>Branch</Th>
-                <Th>Dates</Th><Th className="text-right">Amount</Th>
-                <Th>Payment</Th><Th>Status</Th><Th className="text-right">Actions</Th>
+                <Th>Dates</Th>
+                <Th>Status</Th><Th className="text-right">Actions</Th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((b) => (
+              {rows.map((b) => {
+                const effectiveStatus = getEffectiveStatus(b.id, b.status);
+                const isEditing = editingId === b.id;
+
+                return (
                 <tr key={b.id} className="border-b border-border/60 transition-colors hover:bg-secondary/40">
                   <Td className="font-mono text-xs text-muted-foreground">{b.id}</Td>
                   <Td className="font-medium">{b.customer}</Td>
@@ -67,25 +79,64 @@ function BookingsPage() {
                   </Td>
                   <Td className="text-muted-foreground">{b.branch}</Td>
                   <Td className="text-muted-foreground">{b.from} → {b.to}</Td>
-                  <Td className="text-right font-display font-semibold">{peso(b.amount)}</Td>
-                  <Td><Badge>{b.payment}</Badge></Td>
-                  <Td><Badge>{b.status}</Badge></Td>
+                  <Td>
+                    {isEditing ? (
+                      <TSelect
+                        value={draftStatus}
+                        onChange={(e) => setDraftStatus(e.target.value as BookingStatus)}
+                        className="min-h-9 text-xs"
+                      >
+                        {statuses
+                          .filter((s): s is BookingStatus => s !== "All")
+                          .map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                      </TSelect>
+                    ) : (
+                      <Badge>{effectiveStatus}</Badge>
+                    )}
+                  </Td>
                   <Td className="text-right">
-                    {b.status === "Pending" ? (
-                      <div className="flex justify-end gap-1.5">
-                        <button className="inline-flex h-7 items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20">
-                          <Check className="h-3.5 w-3.5" /> Approve
-                        </button>
-                        <button className="inline-flex h-7 items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500/10 px-2 text-xs font-medium text-rose-400 hover:bg-rose-500/20">
-                          <X className="h-3.5 w-3.5" /> Reject
-                        </button>
+                    {isEditing ? (
+                      <div className="flex justify-end gap-2">
+                        <Btn
+                          type="button"
+                          variant="primary"
+                          onClick={() => {
+                            setStatusOverrides((prev) => ({ ...prev, [b.id]: draftStatus }));
+                            setEditingId(null);
+                          }}
+                        >
+                          Save
+                        </Btn>
+                        <Btn
+                          type="button"
+                          onClick={() => {
+                            setDraftStatus(effectiveStatus);
+                            setEditingId(null);
+                          }}
+                        >
+                          Cancel
+                        </Btn>
                       </div>
                     ) : (
-                      <button className="text-xs font-medium text-primary hover:underline">Manage</button>
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-primary hover:underline"
+                        onClick={() => {
+                          setDraftStatus(effectiveStatus);
+                          setEditingId(b.id);
+                        }}
+                      >
+                        Manage
+                      </button>
                     )}
                   </Td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

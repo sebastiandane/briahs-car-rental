@@ -4,7 +4,7 @@ import {
   BarChart, Bar, RadialBarChart, RadialBar, PolarAngleAxis,
 } from "recharts";
 import { Card, CardHeader, KPI, PageHeader } from "@/components/admin/ui";
-import { bookingVolume, fleetUtilization, kpis, maintenance, peso, revenueTrend } from "@/data/admin";
+import { bookingVolume, branchPerformance, fleetUtilization, kpis, maintenance, peso, revenueTrend } from "@/data/admin";
 import { BarChart3, TrendingUp, Wallet, Car } from "lucide-react";
 import { getAdminSession, isStaffRole } from "@/lib/admin-auth";
 

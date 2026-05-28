@@ -7,8 +7,8 @@ import {
   type MaintenanceRecordDraft,
   type MaintenanceStatus,
 } from "@/components/admin/MaintenanceRecordDialog";
-import { Badge, Btn, Card, CardHeader, KPI, PageHeader } from "@/components/admin/ui";
-import { maintenance, peso } from "@/data/admin";
+import { Badge, Btn, Card, CardHeader, KPI, PageHeader, TSelect } from "@/components/admin/ui";
+import { fleet, maintenance, peso } from "@/data/admin";
 
 export const Route = createFileRoute("/admin/maintenance")({ component: MaintenancePage });
 
@@ -22,36 +22,56 @@ const downtime = [
 ];
 
 function MaintenancePage() {
-  const overdue = maintenance.filter((m) => m.status === "Overdue").length;
-  const scheduled = maintenance.filter((m) => m.status === "Scheduled").length;
-  const inProgress = maintenance.filter((m) => m.status === "In Progress").length;
   const totalCost = maintenance.reduce((s, m) => s + m.cost, 0);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
-  const [draft, setDraft] = useState<MaintenanceRecordDraft>(() => createDraftFromSource());
+  const [draft, setDraft] = useState<MaintenanceRecordDraft>(() => createEmptyDraft());
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, MaintenanceStatus>>({});
 
-  function openServiceModal(index?: number) {
-    setDraft(createDraftFromSource(index));
+  function openServiceModal() {
+    setDraft(createEmptyDraft());
     setServiceModalOpen(true);
   }
 
-  function createDraftFromSource(index = 0): MaintenanceRecordDraft {
-    const source = maintenance[index] ?? maintenance[0];
-    const numericId = Number(source?.id?.replace(/\D/g, "") || 1001);
-
+  function createEmptyDraft(): MaintenanceRecordDraft {
     return {
-      maintenance_id: String(numericId),
-      vehicle_id: String(index + 1),
-      maintenance_type: source?.type ?? "Preventive Maintenance",
-      description: source ? `${source.vehicle} (${source.plate}) - ${source.type}` : "",
-      maintenance_status: (source?.status as MaintenanceStatus) ?? "Scheduled",
-      scheduled_date: source?.due ?? "",
+      maintenance_id: String(Date.now()),
+      vehicle_id: "",
+      maintenance_type: "Preventive Maintenance",
+      description: "",
+      maintenance_status: "Scheduled",
+      scheduled_date: new Date().toISOString().slice(0, 10),
       completed_date: "",
-      cost: source ? String(source.cost) : "",
+      cost: "",
       performed_by: "",
       recorded_by: "1",
       created_at: new Date().toISOString(),
     };
   }
+
+  function getEffectiveStatus(m: (typeof maintenance)[number]) {
+    return statusOverrides[m.id] ?? m.status;
+  }
+
+  const statusPriority: Record<MaintenanceStatus, number> = {
+    Overdue: 0,
+    "In Progress": 1,
+    Scheduled: 2,
+    Completed: 3,
+  };
+
+  const rows = maintenance
+    .map((m, originalIndex) => ({ ...m, effectiveStatus: getEffectiveStatus(m), originalIndex }))
+    .sort((a, b) => {
+      const prio = statusPriority[a.effectiveStatus] - statusPriority[b.effectiveStatus];
+      if (prio !== 0) return prio;
+      const due = String(a.due).localeCompare(String(b.due));
+      if (due !== 0) return due;
+      return a.originalIndex - b.originalIndex;
+    });
+
+  const overdue = rows.filter((m) => m.effectiveStatus === "Overdue").length;
+  const scheduled = rows.filter((m) => m.effectiveStatus === "Scheduled").length;
+  const inProgress = rows.filter((m) => m.effectiveStatus === "In Progress").length;
 
   return (
     <div>
@@ -86,10 +106,11 @@ function MaintenancePage() {
         />
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+      <div className="mt-6 grid gap-4 2xl:grid-cols-[1.6fr_1fr]">
         <Card>
           <CardHeader title="Service schedule" hint="Sorted by urgency" />
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-sm">
             <thead className="text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr className="border-b border-border">
                 <th className="px-4 py-3 text-left font-semibold">Job</th>
@@ -102,7 +123,7 @@ function MaintenancePage() {
               </tr>
             </thead>
             <tbody>
-              {maintenance.map((m, index) => (
+              {rows.map((m) => (
                 <tr key={m.id} className="border-b border-border/60 hover:bg-secondary/40">
                   <td className="px-4 py-3">
                     <div className="font-mono text-xs text-muted-foreground">{m.id}</div>
@@ -118,22 +139,35 @@ function MaintenancePage() {
                     {peso(m.cost)}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge>{m.status}</Badge>
+                    <Badge>{m.effectiveStatus}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Btn variant="primary" onClick={() => openServiceModal(index)}>
-                      Service now
-                    </Btn>
+                    <TSelect
+                      className="min-h-10 w-44 min-w-44"
+                      value={m.effectiveStatus}
+                      onChange={(e) =>
+                        setStatusOverrides((prev) => ({
+                          ...prev,
+                          [m.id]: e.target.value as MaintenanceStatus,
+                        }))
+                      }
+                    >
+                      <option>Scheduled</option>
+                      <option>In Progress</option>
+                      <option>Overdue</option>
+                      <option>Completed</option>
+                    </TSelect>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </Card>
 
         <Card>
           <CardHeader title="Fleet downtime" hint="Days out of service per month" />
-          <div className="h-64 p-4">
+          <div className="h-72 p-5">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={downtime}>
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
@@ -166,6 +200,7 @@ function MaintenancePage() {
       <MaintenanceRecordDialog
         open={serviceModalOpen}
         draft={draft}
+        vehicles={fleet}
         onDraftChange={setDraft}
         onOpenChange={setServiceModalOpen}
       />

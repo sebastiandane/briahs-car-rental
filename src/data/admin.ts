@@ -6,7 +6,7 @@ export const peso = (n: number) =>
   }).format(n);
 
 export type BookingStatus = "Pending" | "Confirmed" | "Ongoing" | "Completed" | "Cancelled";
-export type PaymentStatus = "Pending" | "Partially Paid" | "Paid" | "Failed" | "Refunded";
+export type PaymentStatus = "Pending" | "Paid" | "Invalid";
 export type VehicleStatus = "Available" | "Reserved" | "Rented" | "Maintenance" | "Inactive";
 export type MaintenanceStatus = "Scheduled" | "In Progress" | "Completed" | "Overdue";
 export type VerificationStatus = "Pending Verification" | "Verified" | "Rejected";
@@ -97,7 +97,7 @@ export const bookings: Booking[] = [
     to: "2026-05-28",
     amount: 11200,
     status: "Confirmed",
-    payment: "Partially Paid",
+    payment: "Pending",
   },
   {
     id: "BR-10282",
@@ -181,7 +181,7 @@ export const bookings: Booking[] = [
     to: "2026-05-19",
     amount: 1200,
     status: "Cancelled",
-    payment: "Refunded",
+    payment: "Invalid",
   },
   {
     id: "BR-10275",
@@ -295,6 +295,9 @@ export type FleetVehicle = {
   id: string;
   name: string;
   plate: string;
+  make: string;
+  model: string;
+  color: string;
   category: string;
   transmission: "Automatic" | "Manual";
   seats: number;
@@ -302,6 +305,7 @@ export type FleetVehicle = {
   pricePerDay: number;
   condition: "Excellent" | "Good" | "Needs service";
   status: VehicleStatus;
+  chassisNumber?: string;
 };
 
 export const fleet: FleetVehicle[] = [
@@ -309,6 +313,9 @@ export const fleet: FleetVehicle[] = [
     id: "F-001",
     name: "Toyota Wigo",
     plate: "AAJ 2231",
+    make: "Toyota",
+    model: "Wigo",
+    color: "Silver",
     category: "Economy",
     transmission: "Manual",
     seats: 5,
@@ -316,11 +323,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 1000,
     condition: "Good",
     status: "Rented",
+    chassisNumber: "CHS-TOY-WIGO-001",
   },
   {
     id: "F-002",
     name: "Mitsubishi Mirage",
     plate: "NEH 3380",
+    make: "Mitsubishi",
+    model: "Mirage",
+    color: "White",
     category: "Economy",
     transmission: "Automatic",
     seats: 5,
@@ -328,11 +339,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 1200,
     condition: "Excellent",
     status: "Available",
+    chassisNumber: "CHS-MIT-MIR-002",
   },
   {
     id: "F-003",
     name: "Toyota Vios",
     plate: "NEA 1284",
+    make: "Toyota",
+    model: "Vios",
+    color: "Black",
     category: "Sedan",
     transmission: "Automatic",
     seats: 5,
@@ -340,11 +355,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 1800,
     condition: "Excellent",
     status: "Rented",
+    chassisNumber: "CHS-TOY-VIO-003",
   },
   {
     id: "F-004",
     name: "Honda City",
     plate: "NEB 5582",
+    make: "Honda",
+    model: "City",
+    color: "Gray",
     category: "Sedan",
     transmission: "Automatic",
     seats: 5,
@@ -352,11 +371,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 2000,
     condition: "Good",
     status: "Maintenance",
+    chassisNumber: "CHS-HON-CITY-004",
   },
   {
     id: "F-005",
     name: "Toyota Rush",
     plate: "CAA 1109",
+    make: "Toyota",
+    model: "Rush",
+    color: "Red",
     category: "SUV",
     transmission: "Automatic",
     seats: 7,
@@ -364,11 +387,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 2500,
     condition: "Excellent",
     status: "Reserved",
+    chassisNumber: "CHS-TOY-RUS-005",
   },
   {
     id: "F-006",
     name: "Ford Everest",
     plate: "NCA 7710",
+    make: "Ford",
+    model: "Everest",
+    color: "Blue",
     category: "SUV",
     transmission: "Automatic",
     seats: 7,
@@ -376,11 +403,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 3200,
     condition: "Good",
     status: "Available",
+    chassisNumber: "CHS-FOR-EVE-006",
   },
   {
     id: "F-007",
     name: "Toyota Avanza",
     plate: "NCB 1182",
+    make: "Toyota",
+    model: "Avanza",
+    color: "White",
     category: "MPV",
     transmission: "Automatic",
     seats: 7,
@@ -388,11 +419,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 2200,
     condition: "Good",
     status: "Available",
+    chassisNumber: "CHS-TOY-AVA-007",
   },
   {
     id: "F-008",
     name: "Toyota Innova",
     plate: "ABM 9921",
+    make: "Toyota",
+    model: "Innova",
+    color: "Brown",
     category: "MPV",
     transmission: "Automatic",
     seats: 8,
@@ -400,11 +435,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 2800,
     condition: "Excellent",
     status: "Reserved",
+    chassisNumber: "CHS-TOY-INN-008",
   },
   {
     id: "F-009",
     name: "Nissan Urvan",
     plate: "NDB 4410",
+    make: "Nissan",
+    model: "Urvan",
+    color: "White",
     category: "Van",
     transmission: "Manual",
     seats: 15,
@@ -412,11 +451,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 3500,
     condition: "Good",
     status: "Reserved",
+    chassisNumber: "CHS-NIS-URV-009",
   },
   {
     id: "F-010",
     name: "Toyota Hiace",
     plate: "NDF 8821",
+    make: "Toyota",
+    model: "Hiace",
+    color: "White",
     category: "Van",
     transmission: "Manual",
     seats: 15,
@@ -424,11 +467,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 4200,
     condition: "Needs service",
     status: "Maintenance",
+    chassisNumber: "CHS-TOY-HIA-010",
   },
   {
     id: "F-011",
     name: "Ford Ranger",
     plate: "CAB 7720",
+    make: "Ford",
+    model: "Ranger",
+    color: "Gray",
     category: "Pickup",
     transmission: "Automatic",
     seats: 5,
@@ -436,11 +483,15 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 3000,
     condition: "Excellent",
     status: "Available",
+    chassisNumber: "CHS-FOR-RAN-011",
   },
   {
     id: "F-012",
     name: "Toyota Hilux",
     plate: "NDA 6610",
+    make: "Toyota",
+    model: "Hilux",
+    color: "Black",
     category: "Pickup",
     transmission: "Automatic",
     seats: 5,
@@ -448,6 +499,7 @@ export const fleet: FleetVehicle[] = [
     pricePerDay: 3300,
     condition: "Good",
     status: "Inactive",
+    chassisNumber: "CHS-TOY-HIL-012",
   },
 ];
 
@@ -478,7 +530,7 @@ export const payments: Payment[] = [
     amount: 5600,
     method: "Bank Transfer",
     date: "2026-05-22",
-    status: "Partially Paid",
+    status: "Pending",
   },
   {
     id: "PY-50410",
@@ -514,7 +566,7 @@ export const payments: Payment[] = [
     amount: 1200,
     method: "GCash",
     date: "2026-05-18",
-    status: "Refunded",
+    status: "Invalid",
   },
   {
     id: "PY-50406",
@@ -532,7 +584,7 @@ export const payments: Payment[] = [
     amount: 4200,
     method: "Card",
     date: "2026-05-15",
-    status: "Failed",
+    status: "Invalid",
   },
 ];
 
@@ -631,7 +683,7 @@ export const alerts: Alert[] = [
   },
   { id: "a3", kind: "warning", title: "Maintenance overdue", meta: "Toyota Hiace NDF 8821" },
   { id: "a4", kind: "info", title: "Low availability — Vans", meta: "Taft branch • 1 left" },
-  { id: "a5", kind: "danger", title: "Failed payment", meta: "PY-50405 • Liza Cruz" },
+  { id: "a5", kind: "danger", title: "Invalid payment", meta: "PY-50405 • Liza Cruz" },
 ];
 
 export type Activity = { id: string; who: string; what: string; when: string };

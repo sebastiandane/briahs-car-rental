@@ -13,7 +13,6 @@ import {
   Building2,
   Bell,
   ShieldCheck,
-  Settings,
   Search,
   ChevronDown,
   MoreHorizontal,
@@ -31,34 +30,30 @@ import { canAccessPayments, getAdminSession, isStaffRole, signOutAdmin } from "@
 import { clearCustomerSession } from "@/lib/customer-auth";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
-const navCoreBase: NavItem[] = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/bookings", label: "Bookings", icon: CalendarRange },
-  { to: "/admin/customers", label: "Customers", icon: Users },
-  { to: "/admin/fleet", label: "Fleet Management", icon: Car },
-];
-
 const navStaffModules: NavItem[] = [
   { to: "/admin/bookings", label: "Bookings", icon: CalendarRange },
   { to: "/admin/calendar", label: "Calendar", icon: CalendarDays },
 ];
 
-const navPayments: NavItem[] = [
+const navCoreOperations: NavItem[] = [
+  { to: "/admin/bookings", label: "Bookings", icon: CalendarRange },
+  { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
-];
-
-const navOperations: NavItem[] = [
-  { to: "/admin/maintenance", label: "Maintenance", icon: Wrench },
+  { to: "/admin/fleet", label: "Fleet Management", icon: Car },
   { to: "/admin/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/admin/maintenance", label: "Maintenance", icon: Wrench },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
 ];
 
-const navAdminItems: NavItem[] = [
+const navDecisionSupport: NavItem[] = [
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/reports", label: "Reports & Analytics", icon: BarChart3 },
   { to: "/admin/decisions", label: "Decision Support", icon: Brain },
-  { to: "/admin/branches", label: "Branches", icon: Building2 },
+];
+
+const navAdminOnly: NavItem[] = [
   { to: "/admin/users", label: "Users & Roles", icon: ShieldCheck },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+  { to: "/admin/branches", label: "Branches", icon: Building2 },
 ];
 
 function isActive(pathname: string, item: NavItem) {
@@ -107,9 +102,14 @@ export function AdminShell() {
   const [session, setSession] = useState<ReturnType<typeof getAdminSession> | undefined>();
   const role = session?.role;
   const staffView = isStaffRole(role);
-  const navCore = canAccessPayments(role) ? [...navCoreBase, ...navPayments] : navCoreBase;
-  const navAdmin = staffView ? [] : navAdminItems;
-  const navAll: NavItem[] = staffView ? navStaffModules : [...navCore, ...navOperations, ...navAdmin];
+  const canViewPayments = canAccessPayments(role);
+  const coreOperations = canViewPayments
+    ? navCoreOperations
+    : navCoreOperations.filter((item) => item.to !== "/admin/payments");
+  const navAdmin = staffView ? [] : navAdminOnly;
+  const navAll: NavItem[] = staffView
+    ? navStaffModules
+    : [...navDecisionSupport, ...coreOperations, ...navAdmin];
   const current = navAll.find((n) => isActive(pathname, n));
   const adminContainsCurrent = navAdmin.some((n) => isActive(pathname, n));
   const [adminNavOpen, setAdminNavOpen] = useState(() => adminContainsCurrent);
@@ -197,8 +197,8 @@ export function AdminShell() {
               <SidebarSection title="Modules" items={navStaffModules} />
             ) : (
               <>
-                <SidebarSection title="Core" items={navCore} />
-                <SidebarSection title="Operations" items={navOperations} />
+                <SidebarSection title="Decision Support" items={navDecisionSupport} />
+                <SidebarSection title="Core Operations" items={coreOperations} />
               </>
             )}
 
@@ -210,7 +210,7 @@ export function AdminShell() {
                   className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
                   aria-expanded={adminNavOpen}
                 >
-                  <span>Admin</span>
+                  <span>Admin Only</span>
                   <ChevronDown
                     className={`h-4 w-4 transition-transform ${adminNavOpen ? "rotate-180" : ""}`}
                   />
@@ -298,7 +298,7 @@ export function AdminShell() {
 
         <nav className="border-b border-border bg-surface/80 px-4 py-3 lg:hidden">
           <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Admin sections">
-            {[...navCore, ...navOperations].map((n) => (
+            {[...navDecisionSupport, ...coreOperations].map((n) => (
               <Link
                 key={n.to}
                 to={n.to as never}

@@ -14,8 +14,10 @@ function PaymentsPage() {
   const canViewPayments = canAccessPayments(session?.role);
   const [selected, setSelected] = useState(payments[2]);
   const pending = payments.filter((p) => p.status === "Pending");
+  const invalid = payments.filter((p) => p.status === "Invalid");
   const totalPaid = payments.filter((p) => p.status === "Paid").reduce((s, p) => s + p.amount, 0);
   const totalPending = pending.reduce((s, p) => s + p.amount, 0);
+  const totalInvalid = invalid.reduce((s, p) => s + p.amount, 0);
 
   useEffect(() => {
     if (!session) return;
@@ -33,14 +35,22 @@ function PaymentsPage() {
       <PageHeader
         title="Payments"
         subtitle="Verify proofs, reconcile balances, and track every peso."
-        actions={<Btn variant="primary">Reconcile day</Btn>}
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KPI accent label="Verified today"  value={peso(totalPaid)}     icon={<Banknote className="h-4 w-4" />} />
-        <KPI       label="Pending review"   value={peso(totalPending)}  icon={<Banknote className="h-4 w-4" />} delta={`${pending.length} proofs`} />
-        <KPI       label="Failed (24h)"     value={peso(4200)}          icon={<Banknote className="h-4 w-4" />} />
-        <KPI       label="Refunded (week)"  value={peso(1200)}          icon={<Banknote className="h-4 w-4" />} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <KPI accent label="Verified today" value={peso(totalPaid)} icon={<Banknote className="h-4 w-4" />} />
+        <KPI
+          label="Pending review"
+          value={peso(totalPending)}
+          icon={<Banknote className="h-4 w-4" />}
+          delta={`${pending.length} proofs`}
+        />
+        <KPI
+          label="Invalid proofs"
+          value={peso(totalInvalid)}
+          icon={<Banknote className="h-4 w-4" />}
+          delta={`${invalid.length} proofs`}
+        />
       </div>
 
       <div className="mt-6 grid gap-4 xl:grid-cols-[1.7fr_1fr]">

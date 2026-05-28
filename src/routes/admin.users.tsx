@@ -3,6 +3,7 @@ import { ShieldCheck, User, UserPlus, Users } from "lucide-react";
 import { Badge, Btn, Card, CardHeader, PageHeader } from "@/components/admin/ui";
 import { users } from "@/data/admin";
 import { canAccessPayments, getAdminSession, isStaffRole } from "@/lib/admin-auth";
+import { useState } from "react";
 
 export const Route = createFileRoute("/admin/users")({
   beforeLoad: () => {
@@ -53,6 +54,12 @@ const roleSummary = [
 function UsersPage() {
   const session = getAdminSession();
   const canManageUsers = canAccessPayments(session?.role);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftRole, setDraftRole] = useState<string>("Staff");
+  const [roleOverrides, setRoleOverrides] = useState<Record<string, string>>({});
+
+  const roleOptions = ["Business Owner", "Staff", "Customers / Renters"] as const;
+  const getEffectiveRole = (id: string, role: string) => roleOverrides[id] ?? role;
 
   return (
     <div>
@@ -100,8 +107,6 @@ function UsersPage() {
             <tr className="border-b border-border">
               <th className="px-5 py-3 text-left font-semibold">User</th>
               <th className="px-5 py-3 text-left font-semibold">Role</th>
-              <th className="px-5 py-3 text-left font-semibold">Status</th>
-              <th className="px-5 py-3 text-left font-semibold">Last active</th>
               <th className="px-5 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
@@ -124,20 +129,60 @@ function UsersPage() {
                   </div>
                 </td>
                 <td className="px-5 py-3">
-                  <Badge>{u.role}</Badge>
+                  {editingId === u.id ? (
+                    <select
+                      className="input-control min-h-10"
+                      value={draftRole}
+                      onChange={(e) => setDraftRole(e.target.value)}
+                      disabled={!canManageUsers}
+                    >
+                      {roleOptions.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Badge>{getEffectiveRole(u.id, u.role)}</Badge>
+                  )}
                 </td>
-                <td className="px-5 py-3">
-                  <Badge>{u.status}</Badge>
-                </td>
-                <td className="px-5 py-3 text-muted-foreground">2h ago</td>
                 <td className="px-5 py-3 text-right">
-                  <Btn
-                    variant="ghost"
-                    disabled={!canManageUsers}
-                    title={canManageUsers ? "Edit user" : "Only admin can edit users"}
-                  >
-                    {canManageUsers ? "Edit" : "View only"}
-                  </Btn>
+                  {editingId === u.id ? (
+                    <div className="inline-flex items-center justify-end gap-2">
+                      <Btn
+                        variant="primary"
+                        disabled={!canManageUsers}
+                        onClick={() => {
+                          setRoleOverrides((prev) => ({ ...prev, [u.id]: draftRole }));
+                          setEditingId(null);
+                        }}
+                        title={canManageUsers ? "Save role" : "Only admin can edit roles"}
+                      >
+                        Save
+                      </Btn>
+                      <Btn
+                        variant="ghost"
+                        onClick={() => {
+                          setDraftRole(getEffectiveRole(u.id, u.role));
+                          setEditingId(null);
+                        }}
+                      >
+                        Cancel
+                      </Btn>
+                    </div>
+                  ) : (
+                    <Btn
+                      variant="ghost"
+                      disabled={!canManageUsers}
+                      onClick={() => {
+                        setEditingId(u.id);
+                        setDraftRole(getEffectiveRole(u.id, u.role));
+                      }}
+                      title={canManageUsers ? "Edit role" : "Only admin can edit roles"}
+                    >
+                      {canManageUsers ? "Edit role" : "View only"}
+                    </Btn>
+                  )}
                 </td>
               </tr>
             ))}
