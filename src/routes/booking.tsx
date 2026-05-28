@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Calendar,
@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
+import { SignInDialog } from "@/components/site/SignInDialog";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { peso, vehicles } from "@/data/vehicles";
@@ -28,10 +29,6 @@ export const Route = createFileRoute("/booking")({
 
     if (getAdminSession()) {
       throw redirect({ to: "/admin" });
-    }
-
-    if (!getCustomerSession()) {
-      throw redirect({ to: "/sign-in" });
     }
   },
   validateSearch: (s: Record<string, unknown>): Search => ({
@@ -53,6 +50,8 @@ export const Route = createFileRoute("/booking")({
 function BookingPage() {
   const navigate = useNavigate();
   const { vehicle } = Route.useSearch();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [customerSession, setCustomerSession] = useState(() => getCustomerSession());
   const initial = vehicles.find((v) => v.id === vehicle) ?? vehicles[0];
 
   const [vehicleId, setVehicleId] = useState(initial.id);
@@ -73,6 +72,18 @@ function BookingPage() {
     total: number;
   } | null>(null);
 
+  useEffect(() => {
+    if (!authOpen) {
+      setCustomerSession(getCustomerSession());
+    }
+  }, [authOpen]);
+
+  useEffect(() => {
+    if (!customerSession) return;
+    setName((prev) => (prev ? prev : customerSession.name));
+    setEmail((prev) => (prev ? prev : customerSession.email));
+  }, [customerSession]);
+
   const selected = vehicles.find((v) => v.id === vehicleId) ?? initial;
 
   const days = useMemo(() => {
@@ -86,6 +97,12 @@ function BookingPage() {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitted(false);
+
+    if (!getCustomerSession()) {
+      toast.error("Please sign in to submit your booking request.");
+      setAuthOpen(true);
+      return;
+    }
 
     const nextErrors = validateBooking({ pickup, dropoff, name, email, phone, acceptTerms });
     setErrors(nextErrors);
@@ -110,6 +127,14 @@ function BookingPage() {
     <div>
       <Header />
 
+      <SignInDialog
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        customerSuccessTo="/booking"
+        customerSuccessSearch={vehicle ? { vehicle } : undefined}
+        customerSuccessNavigate={false}
+      />
+
       <section className="border-b border-border bg-secondary/60">
         <div className="container-page py-14 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">
@@ -119,6 +144,23 @@ function BookingPage() {
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
             Tell us where you're going. We'll confirm availability within a few hours.
           </p>
+          {!customerSession && (
+            <div className="mx-auto mt-6 max-w-xl rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-left text-sm text-foreground shadow-soft">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-foreground">
+                  <span className="font-semibold">Sign in required:</span> You can browse and fill
+                  out this form, but you must sign in to submit your booking request.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAuthOpen(true)}
+                  className="touch-target inline-flex items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Sign in
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

@@ -65,11 +65,19 @@ export function SignInDialog({
   onOpenChange,
   closeOnSuccess = true,
   initialMode = "sign-in",
+  customerSuccessTo,
+  customerSuccessSearch,
+  adminSuccessTo,
+  customerSuccessNavigate = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   closeOnSuccess?: boolean;
   initialMode?: AuthMode;
+  customerSuccessTo?: string;
+  customerSuccessSearch?: Record<string, unknown>;
+  adminSuccessTo?: string;
+  customerSuccessNavigate?: boolean;
 }) {
   const [mode, setMode] = useState<AuthMode>("sign-in");
 
@@ -151,6 +159,10 @@ export function SignInDialog({
         {mode === "sign-in" ? (
           <SignInForm
             closeOnSuccess={closeOnSuccess}
+            customerSuccessTo={customerSuccessTo}
+            customerSuccessSearch={customerSuccessSearch}
+            adminSuccessTo={adminSuccessTo}
+            customerSuccessNavigate={customerSuccessNavigate}
             onSuccess={() => onOpenChange(false)}
             onSwitchToSignUp={() => setMode("sign-up")}
           />
@@ -167,11 +179,19 @@ export function SignInDialog({
 
 export function SignInForm({
   closeOnSuccess = false,
+  customerSuccessTo,
+  customerSuccessSearch,
+  adminSuccessTo,
+  customerSuccessNavigate = true,
   onSuccess,
   onProviderContinue,
   onSwitchToSignUp,
 }: {
   closeOnSuccess?: boolean;
+  customerSuccessTo?: string;
+  customerSuccessSearch?: Record<string, unknown>;
+  adminSuccessTo?: string;
+  customerSuccessNavigate?: boolean;
   onSuccess?: () => void;
   onProviderContinue?: (provider: AuthProvider) => Promise<void> | void;
   onSwitchToSignUp?: () => void;
@@ -206,7 +226,7 @@ export function SignInForm({
         if (closeOnSuccess) {
           onSuccess?.();
         }
-        void navigate({ to: "/admin", replace: true });
+        void navigate({ to: (adminSuccessTo ?? "/admin") as never, replace: true });
         return;
       }
 
@@ -214,7 +234,13 @@ export function SignInForm({
         if (closeOnSuccess) {
           onSuccess?.();
         }
-        void navigate({ to: "/customer-landing", replace: true });
+        if (customerSuccessNavigate) {
+          void navigate({
+            to: (customerSuccessTo ?? "/customer-landing") as never,
+            replace: true,
+            ...(customerSuccessSearch ? { search: customerSuccessSearch as never } : {}),
+          });
+        }
         return;
       }
 
@@ -237,7 +263,7 @@ export function SignInForm({
         onSuccess?.();
       }
 
-      void navigate({ to: "/admin", replace: true });
+      void navigate({ to: (adminSuccessTo ?? "/admin") as never, replace: true });
     } catch {
       setError("Sign-in request failed. Please try again.");
     } finally {
