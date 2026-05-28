@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { canAccessPayments, getAdminSession, isStaffRole, signOutAdmin } from "@/lib/admin-auth";
+import { clearCustomerSession } from "@/lib/customer-auth";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 const navCoreBase: NavItem[] = [
@@ -154,7 +155,9 @@ export function AdminShell() {
 
   function handleSignOut() {
     signOutAdmin();
-    void navigate({ to: "/sign-in", replace: true });
+    clearCustomerSession();
+    setSession(null);
+    void navigate({ to: "/", replace: true });
   }
 
   if (session === undefined) {
@@ -282,10 +285,7 @@ export function AdminShell() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    handleSignOut();
-                  }}
+                  onSelect={handleSignOut}
                   className="text-rose-400 focus:text-rose-400"
                 >
                   <LogOut className="h-4 w-4" />
