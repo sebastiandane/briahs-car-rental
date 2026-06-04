@@ -23,8 +23,33 @@ import {
 } from "@/lib/auth-integration";
 import { getAdminSession, signInAdmin } from "@/lib/admin-auth";
 import { setCustomerSession, type CustomerSession } from "@/lib/customer-auth";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 type AuthMode = "sign-in" | "sign-up";
+
+type PendingSignup = {
+  user_type: string;
+  full_name: string;
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  street_address: string;
+  barangay: string;
+  city_municipality: string;
+  province: string;
+  postal_code: string;
+  email: string;
+  phone_number: string;
+  password: string;
+};
 
 type LocalSignupRecord = {
   user_id: number;
@@ -76,6 +101,8 @@ const providerOptions: { provider: AuthProvider; label: string; icon: typeof Chr
 ];
 
 const SIGNUP_USER_TYPE = "Customers / Renters" as const;
+const DEMO_SIGNUP_OTP = "000000";
+const SIGNUP_OTP_LENGTH = 6;
 
 export function SignInDialog({
   open,
@@ -106,6 +133,9 @@ export function SignInDialog({
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        if (document.querySelectorAll('[role="dialog"]').length > 1) {
+          return;
+        }
         onOpenChange(false);
       }
     }
@@ -186,6 +216,11 @@ export function SignInDialog({
         ) : (
           <SignUpForm
             onSwitchToSignIn={() => setMode("sign-in")}
+            closeOnSuccess={closeOnSuccess}
+            customerSuccessTo={customerSuccessTo}
+            customerSuccessSearch={customerSuccessSearch}
+            customerSuccessNavigate={customerSuccessNavigate}
+            onSuccess={() => onOpenChange(false)}
             onProviderContinue={(provider) => continueWithProvider(provider)}
           />
         )}
@@ -272,7 +307,7 @@ export function SignInForm({
           return;
         }
       } else {
-        setError("Invalid username/email or password.");
+        setError("Invalid email or password.");
         return;
       }
 
@@ -318,7 +353,7 @@ export function SignInForm({
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         <label className="block">
-          <span className="text-sm font-medium text-foreground">Username or email</span>
+          <span className="text-sm font-medium text-foreground">Email</span>
           <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm focus-within:border-primary">
             <UserRound className="h-4 w-4 text-muted-foreground" />
             <input
@@ -327,9 +362,9 @@ export function SignInForm({
               onChange={(event) => setIdentifier(event.target.value)}
               aria-invalid={Boolean(error)}
               className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-              autoComplete="username"
+              autoComplete="email"
               id="auth-identifier"
-              placeholder="Enter username or email"
+              placeholder="Enter email"
             />
           </span>
         </label>
@@ -393,11 +428,22 @@ export function SignInForm({
 
 function SignUpForm({
   onSwitchToSignIn,
+  closeOnSuccess = true,
+  customerSuccessTo,
+  customerSuccessSearch,
+  customerSuccessNavigate = true,
+  onSuccess,
   onProviderContinue,
 }: {
   onSwitchToSignIn: () => void;
+  closeOnSuccess?: boolean;
+  customerSuccessTo?: string;
+  customerSuccessSearch?: Record<string, unknown>;
+  customerSuccessNavigate?: boolean;
+  onSuccess?: () => void;
   onProviderContinue: (provider: AuthProvider) => Promise<void> | void;
 }) {
+  const navigate = useNavigate();
   const firstNameRef = useRef<HTMLInputElement>(null);
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -415,15 +461,27 @@ function SignUpForm({
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [providerLoading, setProviderLoading] = useState<AuthProvider | null>(null);
+  const [pendingSignup, setPendingSignup] = useState<PendingSignup | null>(null);
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpError, setOtpError] = useState("");
 
   useEffect(() => {
     firstNameRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    if (otpDialogOpen) {
+      setOtpValue("");
+      setOtpError("");
+    }
+  }, [otpDialogOpen]);
+
   async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setNotice("");
+    setOtpError("");
 
     const trimmedFirst = firstName.trim();
     const trimmedMiddle = middleName.trim();
@@ -463,56 +521,108 @@ function SignUpForm({
       return;
     }
 
+    if (!hasApiSignup() && !hasBrowserStorage()) {
+      setError("Unable to create account right now.");
+      return;
+    }
+
+    if (isLocalPrototypeEmailRegistered(trimmedEmail)) {
+      setError("Email is registered.");
+      return;
+    }
+
+    setPendingSignup({
+      user_type: SIGNUP_USER_TYPE,
+      full_name: fullName,
+      first_name: trimmedFirst,
+      middle_name: trimmedMiddle,
+      last_name: trimmedLast,
+      street_address: trimmedStreet,
+      barangay: trimmedBarangay,
+      city_municipality: trimmedCity,
+      province: trimmedProvince,
+      postal_code: trimmedPostal,
+      email: trimmedEmail,
+      phone_number: trimmedPhone,
+      password,
+    });
+    setOtpDialogOpen(true);
+  }
+
+  async function handleOtpSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setOtpError("");
+
+    if (!pendingSignup) {
+      setOtpError("Please submit the signup form again.");
+      return;
+    }
+
+    if (otpValue.length !== SIGNUP_OTP_LENGTH) {
+      setOtpError("Please enter the 6-digit OTP.");
+      return;
+    }
+
+    if (otpValue !== DEMO_SIGNUP_OTP) {
+      setOtpError("Invalid OTP.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (hasApiSignup()) {
         const result = await signUpWithCredentialsApi({
-          user_type: SIGNUP_USER_TYPE,
-          full_name: fullName,
-          email: trimmedEmail,
-          phone_number: trimmedPhone,
-          password,
+          user_type: pendingSignup.user_type,
+          full_name: pendingSignup.full_name,
+          email: pendingSignup.email,
+          phone_number: pendingSignup.phone_number,
+          password: pendingSignup.password,
           account_status: "Active",
         });
 
         if (!result.ok) {
-          setError(result.message ?? "Unable to sign up right now.");
+          setOtpError(result.message ?? "Unable to sign up right now.");
           return;
         }
 
-        setNotice("Account created. You can now sign in.");
+        setNotice("Account created.");
       } else {
-        const didSave = saveLocalPrototypeSignup({
-          user_type: SIGNUP_USER_TYPE,
-          full_name: fullName,
-          first_name: trimmedFirst,
-          middle_name: trimmedMiddle,
-          last_name: trimmedLast,
-          street_address: trimmedStreet,
-          barangay: trimmedBarangay,
-          city_municipality: trimmedCity,
-          province: trimmedProvince,
-          postal_code: trimmedPostal,
-          email: trimmedEmail,
-          phone_number: trimmedPhone,
-          password,
-        });
+        const didSave = saveLocalPrototypeSignup(pendingSignup);
 
         if (!didSave.ok) {
-          setError(didSave.message ?? "Unable to save signup.");
+          setOtpError(didSave.message ?? "Unable to save signup.");
           return;
         }
 
-        setNotice("Signup saved for prototype. Connect signup API to create live accounts.");
+        setNotice("Account created.");
       }
 
+      setCustomerSession(createCustomerSessionFromSignup(pendingSignup));
       setPassword("");
       setConfirmPassword("");
+      closeOtpDialog();
+      if (closeOnSuccess) {
+        onSuccess?.();
+      }
+      if (customerSuccessNavigate) {
+        void navigate({
+          to: (customerSuccessTo ?? "/customer-landing") as never,
+          replace: true,
+          ...(customerSuccessSearch ? { search: customerSuccessSearch as never } : {}),
+        });
+      }
     } catch {
-      setError("Signup request failed. Please try again.");
+      setOtpError("Signup request failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function closeOtpDialog() {
+    setOtpDialogOpen(false);
+    setOtpValue("");
+    setOtpError("");
+    setPendingSignup(null);
   }
 
   async function handleProviderSignupContinue(provider: AuthProvider) {
@@ -736,13 +846,85 @@ function SignUpForm({
 
         <button
           type="submit"
-          disabled={submitting || providerLoading !== null}
+          disabled={submitting || providerLoading !== null || otpDialogOpen}
           className="touch-target inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? "Creating account..." : "Create account"}
           <ArrowRight className="h-4 w-4" />
         </button>
       </form>
+
+      <Dialog
+        open={otpDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeOtpDialog();
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Verify your email</DialogTitle>
+            <DialogDescription>
+              Enter the 6-digit OTP sent to{" "}
+              <span className="break-all font-medium text-foreground">
+                {pendingSignup?.email ?? email.trim().toLowerCase()}
+              </span>
+              .
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleOtpSubmit} className="space-y-4">
+            <div className="flex justify-center">
+              <InputOTP
+                maxLength={SIGNUP_OTP_LENGTH}
+                value={otpValue}
+                onChange={(value) => {
+                  setOtpValue(value.replace(/\D/g, ""));
+                  setOtpError("");
+                }}
+                disabled={submitting}
+                inputMode="numeric"
+                aria-label="Email OTP"
+              >
+                <InputOTPGroup>
+                  {Array.from({ length: SIGNUP_OTP_LENGTH }).map((_, index) => (
+                    <InputOTPSlot key={index} index={index} className="h-10 w-10" />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+
+            {otpError && (
+              <div
+                aria-live="polite"
+                className="flex items-start gap-2 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{otpError}</span>
+              </div>
+            )}
+
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={closeOtpDialog}
+                disabled={submitting}
+                className="touch-target inline-flex items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || otpValue.length !== SIGNUP_OTP_LENGTH}
+                className="touch-target inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? "Verifying..." : "Verify OTP"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <SocialProviderButtons
         submitting={submitting}
@@ -827,14 +1009,33 @@ function getPrototypeCustomerAccounts() {
   );
 }
 
+function isLocalPrototypeEmailRegistered(email: string) {
+  return getPrototypeCustomerAccounts().some(
+    (record) => record.email.toLowerCase() === email.toLowerCase(),
+  );
+}
+
+function createCustomerSessionFromSignup(signup: PendingSignup): CustomerSession {
+  return {
+    name: signup.full_name,
+    email: signup.email,
+    phone: signup.phone_number,
+    streetAddress: signup.street_address,
+    barangay: signup.barangay,
+    cityMunicipality: signup.city_municipality,
+    province: signup.province,
+    postalCode: signup.postal_code,
+    user_type: "Customers / Renters",
+    signedInAt: new Date().toISOString(),
+  };
+}
+
 function signInCustomerPrototype(identifier: string, password: string) {
   if (!hasBrowserStorage()) return false;
 
   const normalizedIdentifier = identifier.trim().toLowerCase();
   const account = getPrototypeCustomerAccounts().find(
-    (record) =>
-      record.email.toLowerCase() === normalizedIdentifier ||
-      record.full_name.toLowerCase() === normalizedIdentifier,
+    (record) => record.email.toLowerCase() === normalizedIdentifier,
   );
 
   if (!account || account.password_hash !== password || account.account_status !== "Active") {
@@ -844,6 +1045,12 @@ function signInCustomerPrototype(identifier: string, password: string) {
   const session: CustomerSession = {
     name: account.full_name,
     email: account.email,
+    phone: account.phone_number,
+    streetAddress: account.street_address ?? "",
+    barangay: account.barangay ?? "",
+    cityMunicipality: account.city_municipality ?? "",
+    province: account.province ?? "",
+    postalCode: account.postal_code ?? "",
     user_type: "Customers / Renters",
     signedInAt: new Date().toISOString(),
   };
@@ -866,32 +1073,14 @@ function saveLocalPrototypeSignup({
   email,
   phone_number,
   password,
-}: {
-  user_type: string;
-  full_name: string;
-  first_name: string;
-  middle_name: string;
-  last_name: string;
-  street_address: string;
-  barangay: string;
-  city_municipality: string;
-  province: string;
-  postal_code: string;
-  email: string;
-  phone_number: string;
-  password: string;
-}) {
+}: PendingSignup) {
   if (!hasBrowserStorage()) {
-    return { ok: false, message: "Storage is not available in this browser." };
+    return { ok: false, message: "Unable to create account right now." };
   }
 
   const existing = readLocalPrototypeSignups();
-  if (
-    getPrototypeCustomerAccounts().some(
-      (record) => record.email.toLowerCase() === email.toLowerCase(),
-    )
-  ) {
-    return { ok: false, message: "Email is already registered in local prototype data." };
+  if (isLocalPrototypeEmailRegistered(email)) {
+    return { ok: false, message: "Email is registered." };
   }
 
   const now = new Date().toISOString();

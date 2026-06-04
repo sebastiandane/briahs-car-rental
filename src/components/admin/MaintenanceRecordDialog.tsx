@@ -187,7 +187,7 @@ export function MaintenanceRecordDialog({
               onOpenChange(false);
             }}
           >
-            Save record (Prototype)
+            Save record
           </Btn>
         </DialogFooter>
       </DialogContent>

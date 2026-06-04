@@ -1,12 +1,29 @@
 ﻿import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 import { Card, CardHeader, PageHeader, Badge, Btn } from "@/components/admin/ui";
 import {
-  Brain, AlertTriangle, ArrowRight, CloudRain, Fuel, Route as RouteIcon,
+  Brain,
+  AlertTriangle,
+  ArrowRight,
+  CloudRain,
+  Fuel,
+  Route as RouteIcon,
 } from "lucide-react";
 import { getAdminSession, isStaffRole } from "@/lib/admin-auth";
 import {
@@ -27,13 +44,13 @@ export const Route = createFileRoute("/admin/decisions")({
 const goldGrid = "rgba(255,255,255,0.06)";
 
 const forecast = [
-  { d: "W-3", actual: 156, forecast: 160 },
-  { d: "W-2", actual: 168, forecast: 165 },
-  { d: "W-1", actual: 182, forecast: 178 },
-  { d: "W0", actual: 198, forecast: 195 },
-  { d: "W+1", actual: null, forecast: 212 },
-  { d: "W+2", actual: null, forecast: 224 },
-  { d: "W+3", actual: null, forecast: 218 },
+  { d: "W-3", taftActual: 16, taftForecast: 17, antipoloActual: 9, antipoloForecast: 10 },
+  { d: "W-2", taftActual: 18, taftForecast: 18, antipoloActual: 11, antipoloForecast: 11 },
+  { d: "W-1", taftActual: 20, taftForecast: 19, antipoloActual: 12, antipoloForecast: 12 },
+  { d: "W0", taftActual: 21, taftForecast: 22, antipoloActual: 13, antipoloForecast: 13 },
+  { d: "W+1", taftActual: null, taftForecast: 23, antipoloActual: null, antipoloForecast: 14 },
+  { d: "W+2", taftActual: null, taftForecast: 25, antipoloActual: null, antipoloForecast: 15 },
+  { d: "W+3", taftActual: null, taftForecast: 24, antipoloActual: null, antipoloForecast: 15 },
 ];
 
 const idleVehicles = [
@@ -59,6 +76,7 @@ const radar = [
 ];
 
 function DecisionPage() {
+  const navigate = useNavigate();
   const [allocationRows, setAllocationRows] = useState<BranchAllocationRecommendation[]>([]);
 
   useEffect(() => {
@@ -85,7 +103,11 @@ function DecisionPage() {
       />
 
       <Card className="mb-4">
-        <CardHeader title="Demand forecasting" hint="Weighted moving average • next 3 weeks" right={<Badge>High confidence</Badge>} />
+        <CardHeader
+          title="Demand forecasting"
+          hint="Weighted moving average • next 3 weeks"
+          right={<Badge>High confidence</Badge>}
+        />
         <div className="h-72 p-4">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={forecast}>
@@ -94,13 +116,66 @@ function DecisionPage() {
                   <stop offset="0%" stopColor="oklch(0.84 0.16 92)" stopOpacity={0.4} />
                   <stop offset="100%" stopColor="oklch(0.84 0.16 92)" stopOpacity={0} />
                 </linearGradient>
+                <linearGradient id="dcyan" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="oklch(0.72 0.15 210)" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="oklch(0.72 0.15 210)" stopOpacity={0} />
+                </linearGradient>
               </defs>
               <CartesianGrid stroke={goldGrid} vertical={false} />
-              <XAxis dataKey="d" tick={{ fill: "oklch(0.72 0.015 250)", fontSize: 11 }} axisLine={{ stroke: goldGrid }} tickLine={false} />
-              <YAxis tick={{ fill: "oklch(0.72 0.015 250)", fontSize: 11 }} axisLine={{ stroke: goldGrid }} tickLine={false} />
-              <Tooltip contentStyle={{ background: "oklch(0.23 0.03 260)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 12 }} />
-              <Area type="monotone" dataKey="actual" stroke="oklch(0.72 0.015 250)" fill="transparent" strokeWidth={2} />
-              <Area type="monotone" dataKey="forecast" stroke="oklch(0.84 0.16 92)" strokeWidth={2.5} fill="url(#dgold)" />
+              <XAxis
+                dataKey="d"
+                tick={{ fill: "oklch(0.72 0.015 250)", fontSize: 11 }}
+                axisLine={{ stroke: goldGrid }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "oklch(0.72 0.015 250)", fontSize: 11 }}
+                axisLine={{ stroke: goldGrid }}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "oklch(0.23 0.03 260)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+              />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Area
+                type="monotone"
+                dataKey="taftActual"
+                name="Taft actual demand"
+                stroke="oklch(0.94 0.1 92)"
+                strokeWidth={2}
+                fill="transparent"
+              />
+              <Area
+                type="monotone"
+                dataKey="taftForecast"
+                name="Taft forecast demand"
+                stroke="oklch(0.84 0.16 92)"
+                strokeWidth={2.5}
+                strokeDasharray="4 4"
+                fill="url(#dgold)"
+              />
+              <Area
+                type="monotone"
+                dataKey="antipoloActual"
+                name="Antipolo actual demand"
+                stroke="oklch(0.84 0.1 210)"
+                strokeWidth={2}
+                fill="transparent"
+              />
+              <Area
+                type="monotone"
+                dataKey="antipoloForecast"
+                name="Antipolo forecast demand"
+                strokeDasharray="4 4"
+                stroke="oklch(0.72 0.15 210)"
+                strokeWidth={2.5}
+                fill="url(#dcyan)"
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -111,7 +186,13 @@ function DecisionPage() {
           <CardHeader title="Vehicle utilization" hint="Top performers (last 30 days)" />
           <table className="w-full text-sm">
             <thead className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              <tr className="border-b border-border"><th className="px-4 py-3 text-left">Vehicle</th><th className="px-4 py-3 text-left">Plate</th><th className="px-4 py-3 text-left">Branch</th><th className="px-4 py-3 text-right">Utilization</th><th className="px-4 py-3 text-right">Trend</th></tr>
+              <tr className="border-b border-border">
+                <th className="px-4 py-3 text-left">Vehicle</th>
+                <th className="px-4 py-3 text-left">Plate</th>
+                <th className="px-4 py-3 text-left">Branch</th>
+                <th className="px-4 py-3 text-right">Utilization</th>
+                <th className="px-4 py-3 text-right">Trend</th>
+              </tr>
             </thead>
             <tbody>
               {utilRows.map((r) => (
@@ -121,11 +202,17 @@ function DecisionPage() {
                   <td className="px-4 py-3 text-muted-foreground">{r.branch}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="ml-auto flex w-32 items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary"><div className="h-full bg-primary" style={{ width: `${r.util}%` }} /></div>
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
+                        <div className="h-full bg-primary" style={{ width: `${r.util}%` }} />
+                      </div>
                       <span className="w-9 text-right text-xs">{r.util}%</span>
                     </div>
                   </td>
-                  <td className={`px-4 py-3 text-right text-xs ${r.trend.startsWith("+") ? "text-emerald-400" : "text-rose-400"}`}>{r.trend}</td>
+                  <td
+                    className={`px-4 py-3 text-right text-xs ${r.trend.startsWith("+") ? "text-emerald-400" : "text-rose-400"}`}
+                  >
+                    {r.trend}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -133,17 +220,25 @@ function DecisionPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Idle vehicle detection" hint="Underused fleet to reactivate" right={<AlertTriangle className="h-4 w-4 text-amber-400" />} />
+          <CardHeader
+            title="Idle vehicle detection"
+            hint="Underused fleet to reactivate"
+            right={<AlertTriangle className="h-4 w-4 text-amber-400" />}
+          />
           <ul className="divide-y divide-border">
             {idleVehicles.map((v) => (
               <li key={v.plate} className="flex items-center justify-between px-5 py-4">
                 <div>
                   <div className="font-medium">{v.name}</div>
-                  <div className="text-xs text-muted-foreground">{v.plate} • {v.branch}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {v.plate} • {v.branch}
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="font-display text-xl font-semibold text-amber-400">{v.idle}d</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">idle</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    idle
+                  </div>
                 </div>
               </li>
             ))}
@@ -161,12 +256,17 @@ function DecisionPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">{b.name}</div>
-                    <div className="text-xs text-muted-foreground">{b.bookings} bookings • {b.share} share</div>
+                    <div className="text-xs text-muted-foreground">
+                      {b.bookings} bookings • {b.share} share
+                    </div>
                   </div>
                   <Badge>{b.high ? "High demand" : "Steady"}</Badge>
                 </div>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary">
-                  <div className={`h-full ${b.high ? "bg-primary" : "bg-muted-foreground/60"}`} style={{ width: `${b.score}%` }} />
+                  <div
+                    className={`h-full ${b.high ? "bg-primary" : "bg-muted-foreground/60"}`}
+                    style={{ width: `${b.score}%` }}
+                  />
                 </div>
               </div>
             ))}
@@ -174,18 +274,33 @@ function DecisionPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Vehicle recommendation" hint="For trip: 6 pax, Manila ? Baguio (250 km)" right={<Brain className="h-4 w-4 text-primary" />} />
+          <CardHeader
+            title="Vehicle recommendation"
+            hint="For trip: 6 pax, Manila ? Baguio (250 km)"
+            right={<Brain className="h-4 w-4 text-primary" />}
+          />
           <div className="grid gap-4 p-5 md:grid-cols-[1fr_1.2fr]">
             <ResponsiveContainer width="100%" height={200}>
               <RadarChart data={radar}>
                 <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                <PolarAngleAxis dataKey="dim" tick={{ fill: "oklch(0.72 0.015 250)", fontSize: 10 }} />
+                <PolarAngleAxis
+                  dataKey="dim"
+                  tick={{ fill: "oklch(0.72 0.015 250)", fontSize: 10 }}
+                />
                 <PolarRadiusAxis tick={false} axisLine={false} />
-                <Radar dataKey="v" stroke="oklch(0.84 0.16 92)" fill="oklch(0.84 0.16 92)" fillOpacity={0.35} strokeWidth={2} />
+                <Radar
+                  dataKey="v"
+                  stroke="oklch(0.84 0.16 92)"
+                  fill="oklch(0.84 0.16 92)"
+                  fillOpacity={0.35}
+                  strokeWidth={2}
+                />
               </RadarChart>
             </ResponsiveContainer>
             <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Top match</div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                Top match
+              </div>
               <div className="mt-1 font-display text-xl font-semibold">Toyota Innova</div>
               <div className="text-xs text-muted-foreground">ABM 9921 • Taft, Manila</div>
               <ul className="mt-4 space-y-1.5 text-xs text-muted-foreground">
@@ -194,7 +309,9 @@ function DecisionPage() {
                 <li>• Available May 26 ? 30</li>
                 <li>• Excellent condition (last service 2 wks)</li>
               </ul>
-              <Btn variant="primary" className="mt-4">Recommend vehicle <ArrowRight className="h-4 w-4" /></Btn>
+              <Btn variant="primary" className="mt-4">
+                Recommend vehicle <ArrowRight className="h-4 w-4" />
+              </Btn>
             </div>
           </div>
         </Card>
@@ -204,7 +321,7 @@ function DecisionPage() {
         <Card>
           <CardHeader
             title="Branch allocation recommendation"
-            hint="Weather, traffic, and fuel-adjusted recommendations."
+            hint="Weather, road condition, and fuel-adjusted recommendations."
           />
           <ul className="divide-y divide-border text-sm">
             {allocationRows.map((row) => (
@@ -215,7 +332,9 @@ function DecisionPage() {
                   </span>
                   <div>
                     <div className="font-medium">{row.unit}</div>
-                    <div className="text-xs text-muted-foreground">{row.from} ? {row.to}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {row.from} ? {row.to}
+                    </div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
                       {row.reason} • score {row.urgencyScore}
                     </div>
@@ -226,7 +345,7 @@ function DecisionPage() {
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/30 bg-violet-500/10 px-2 py-0.5 text-violet-300">
                         <RouteIcon className="h-3 w-3" />
-                        Traffic +{row.breakdown.traffic}
+                        Road condition +{row.breakdown.traffic}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-amber-300">
                         <Fuel className="h-3 w-3" />
@@ -235,7 +354,11 @@ function DecisionPage() {
                       </span>
                     </div>
                     <div className="mt-1 text-[10px] text-muted-foreground">
-                      Updated {new Date(row.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      Updated{" "}
+                      {new Date(row.updatedAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
                   </div>
                 </div>
@@ -251,7 +374,11 @@ function DecisionPage() {
                   >
                     {row.confidence} confidence
                   </Badge>
-                  <Btn variant="primary" className="h-6 rounded-full px-2.5 text-[11px] font-medium">
+                  <Btn
+                    variant="primary"
+                    className="h-6 rounded-full px-2.5 text-[11px] font-medium"
+                    onClick={() => navigate({ to: "/admin/fleet" })}
+                  >
                     Approve transfer
                   </Btn>
                 </div>
@@ -266,11 +393,26 @@ function DecisionPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Context-aware insights" hint="Weather, road & fuel context" />
+          <CardHeader
+            title="Context-aware insights"
+            hint="Weather, road condition & fuel context"
+          />
           <ul className="divide-y divide-border text-sm">
-            <Insight icon={<CloudRain className="h-4 w-4" />} title="Typhoon advisory Signal 1 • Rizal" body="Recommend SUVs for Antipolo bookings May 27–29. Defer self-drive issuances to AT vehicles only." />
-            <Insight icon={<RouteIcon className="h-4 w-4" />} title="NLEX traffic forecast" body="Heavy outbound flow Friday 4–8 PM. Shift Baguio pickups to before 2 PM." />
-            <Insight icon={<Fuel className="h-4 w-4" />} title="Diesel rollback +?0.85/L" body="Adjust van pricing band by +?150/day to preserve margin starting June 1." />
+            <Insight
+              icon={<CloudRain className="h-4 w-4" />}
+              title="Typhoon advisory Signal 1 • Rizal"
+              body="Recommend SUVs for Antipolo bookings May 27–29. Defer self-drive issuances to AT vehicles only."
+            />
+            <Insight
+              icon={<RouteIcon className="h-4 w-4" />}
+              title="NLEX road condition advisory"
+              body="Reported lane repairs and rough patches near Valenzuela. Assign higher-clearance units and allow extra inspection time before Baguio trips."
+            />
+            <Insight
+              icon={<Fuel className="h-4 w-4" />}
+              title="Diesel rollback +?0.85/L"
+              body="Adjust van pricing band by +?150/day to preserve margin starting June 1."
+            />
           </ul>
         </Card>
       </div>
@@ -281,7 +423,9 @@ function DecisionPage() {
 function Insight({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
     <li className="flex gap-3 px-5 py-4">
-      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary/15 text-primary">{icon}</span>
+      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary/15 text-primary">
+        {icon}
+      </span>
       <div>
         <div className="font-medium">{title}</div>
         <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{body}</div>
@@ -289,4 +433,3 @@ function Insight({ icon, title, body }: { icon: React.ReactNode; title: string; 
     </li>
   );
 }
-

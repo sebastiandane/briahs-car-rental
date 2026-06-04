@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -33,7 +33,10 @@ type FilterCategory = (typeof filterCategories)[number];
 type Notification = (typeof notifications)[number];
 type NotificationGroupId = "needsAction" | "operationalAlerts" | "updates";
 
-const groupMeta: Record<NotificationGroupId, { title: string; description: string; icon: typeof Bell }> = {
+const groupMeta: Record<
+  NotificationGroupId,
+  { title: string; description: string; icon: typeof Bell }
+> = {
   needsAction: {
     title: "Needs action",
     description: "Items that require review or a decision.",
@@ -85,7 +88,31 @@ function actionLabelForCategory(category: Notification["category"]) {
   }
 }
 
-function NotificationIcon({ category, unread }: { category: Notification["category"]; unread: boolean }) {
+function routeForCategory(category: Notification["category"]) {
+  switch (category) {
+    case "Booking":
+    case "Return":
+      return "/admin/bookings";
+    case "Payment":
+      return "/admin/payments";
+    case "Maintenance":
+      return "/admin/maintenance";
+    case "Availability":
+      return "/admin/fleet";
+    case "Verification":
+      return "/admin/customers";
+    default:
+      return "/admin";
+  }
+}
+
+function NotificationIcon({
+  category,
+  unread,
+}: {
+  category: Notification["category"];
+  unread: boolean;
+}) {
   const Icon =
     category === "Booking"
       ? CalendarRange
@@ -136,7 +163,12 @@ function FilterChip({
       )}
     >
       <span className="font-medium">{label}</span>
-      <span className={cn("rounded-full px-2 py-0.5 text-xs", selected ? "bg-primary/15" : "bg-secondary")}>
+      <span
+        className={cn(
+          "rounded-full px-2 py-0.5 text-xs",
+          selected ? "bg-primary/15" : "bg-secondary",
+        )}
+      >
         {count}
       </span>
     </button>
@@ -165,7 +197,9 @@ function SummaryCard({
         <p className="text-sm text-muted-foreground">{label}</p>
         <span className={cn("text-muted-foreground", accent && "text-yellow-200")}>{icon}</span>
       </div>
-      <p className="mt-2 font-display text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+      <p className="mt-2 font-display text-2xl font-semibold tracking-tight text-foreground">
+        {value}
+      </p>
     </div>
   );
 }
@@ -221,6 +255,7 @@ function NotificationRow({
 }
 
 function NotificationsPage() {
+  const navigate = useNavigate();
   const [category, setCategory] = useState<FilterCategory>("All");
   const [items, setItems] = useState<Notification[]>(() => notifications.map((n) => ({ ...n })));
 
@@ -281,7 +316,11 @@ function NotificationsPage() {
   }
 
   function handleRowAction(id: string) {
+    const notification = items.find((n) => n.id === id);
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+    if (notification) {
+      void navigate({ to: routeForCategory(notification.category) as never });
+    }
   }
 
   return (
@@ -298,7 +337,11 @@ function NotificationsPage() {
               variant="danger"
               onClick={clearArchive}
               disabled={items.length === 0 || items.every((n) => n.unread)}
-              title={items.every((n) => n.unread) ? "No archived (read) notifications to clear" : undefined}
+              title={
+                items.every((n) => n.unread)
+                  ? "No archived (read) notifications to clear"
+                  : undefined
+              }
             >
               <Trash2 className="h-4 w-4" /> Clear archive
             </Btn>
@@ -323,7 +366,11 @@ function NotificationsPage() {
           value={String(alertCount)}
           icon={<AlertTriangle className="h-4 w-4" />}
         />
-        <SummaryCard label="Updates" value={String(updateCount)} icon={<Bell className="h-4 w-4" />} />
+        <SummaryCard
+          label="Updates"
+          value={String(updateCount)}
+          icon={<Bell className="h-4 w-4" />}
+        />
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">

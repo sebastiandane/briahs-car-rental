@@ -19,9 +19,11 @@ import { Route as BookingRouteImport } from './routes/booking'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as CustomerProfileRouteImport } from './routes/customer_.profile'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminMaintenanceRouteImport } from './routes/admin.maintenance'
@@ -82,6 +84,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const CustomerProfileRoute = CustomerProfileRouteImport.update({
+  id: '/customer_/profile',
+  path: '/customer/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -95,6 +102,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProfileRoute = AdminProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
@@ -162,9 +174,11 @@ export interface FileRoutesByFullPath {
   '/admin/maintenance': typeof AdminMaintenanceRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/profile': typeof AdminProfileRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/customer/profile': typeof CustomerProfileRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -185,9 +199,11 @@ export interface FileRoutesByTo {
   '/admin/maintenance': typeof AdminMaintenanceRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/profile': typeof AdminProfileRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/customer/profile': typeof CustomerProfileRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -210,9 +226,11 @@ export interface FileRoutesById {
   '/admin/maintenance': typeof AdminMaintenanceRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/profile': typeof AdminProfileRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/customer_/profile': typeof CustomerProfileRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -236,9 +254,11 @@ export interface FileRouteTypes {
     | '/admin/maintenance'
     | '/admin/notifications'
     | '/admin/payments'
+    | '/admin/profile'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/users'
+    | '/customer/profile'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -259,9 +279,11 @@ export interface FileRouteTypes {
     | '/admin/maintenance'
     | '/admin/notifications'
     | '/admin/payments'
+    | '/admin/profile'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/users'
+    | '/customer/profile'
     | '/admin'
   id:
     | '__root__'
@@ -283,9 +305,11 @@ export interface FileRouteTypes {
     | '/admin/maintenance'
     | '/admin/notifications'
     | '/admin/payments'
+    | '/admin/profile'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/users'
+    | '/customer_/profile'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -299,6 +323,7 @@ export interface RootRouteChildren {
   PaymentDetailsRoute: typeof PaymentDetailsRoute
   SignInRoute: typeof SignInRoute
   VehiclesRoute: typeof VehiclesRoute
+  CustomerProfileRoute: typeof CustomerProfileRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -373,6 +398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/customer_/profile': {
+      id: '/customer_/profile'
+      path: '/customer/profile'
+      fullPath: '/customer/profile'
+      preLoaderRoute: typeof CustomerProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -392,6 +424,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/profile': {
+      id: '/admin/profile'
+      path: '/profile'
+      fullPath: '/admin/profile'
+      preLoaderRoute: typeof AdminProfileRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payments': {
@@ -470,6 +509,7 @@ interface AdminRouteChildren {
   AdminMaintenanceRoute: typeof AdminMaintenanceRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
+  AdminProfileRoute: typeof AdminProfileRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -486,6 +526,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMaintenanceRoute: AdminMaintenanceRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
+  AdminProfileRoute: AdminProfileRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
@@ -504,6 +545,7 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentDetailsRoute: PaymentDetailsRoute,
   SignInRoute: SignInRoute,
   VehiclesRoute: VehiclesRoute,
+  CustomerProfileRoute: CustomerProfileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

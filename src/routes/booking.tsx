@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getAdminSession } from "@/lib/admin-auth";
-import { getCustomerSession } from "@/lib/customer-auth";
+import { getCustomerProfile, getCustomerSession } from "@/lib/customer-auth";
 import { vehicles } from "@/data/vehicles";
 import { CANCELLATION_POLICY, RENTAL_DONTS, RENTAL_DOS } from "@/data/rental-policy";
 
@@ -88,8 +88,10 @@ function BookingPage() {
 
   useEffect(() => {
     if (!customerSession) return;
+    const profile = getCustomerProfile(customerSession);
     setName((prev) => (prev ? prev : customerSession.name));
     setEmail((prev) => (prev ? prev : customerSession.email));
+    setPhone((prev) => (prev ? prev : profile.phone));
     setErrors((current) => ({ ...current, name: undefined, email: undefined }));
   }, [customerSession]);
 
@@ -248,11 +250,7 @@ function BookingPage() {
       </section>
 
       <section className="container-page mt-10">
-        <form
-          onSubmit={submit}
-          noValidate
-          className="grid gap-8 lg:grid-cols-[1.4fr_1fr]"
-        >
+        <form onSubmit={submit} noValidate className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
           <div className="rounded-xl border border-border bg-card p-5 shadow-soft md:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -278,12 +276,12 @@ function BookingPage() {
                   className="input-control"
                 >
                   {vehicles.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Pickup branch" id="booking-branch">
                 <select
                   id="booking-branch"
@@ -414,74 +412,78 @@ function BookingPage() {
 
           <div className="space-y-6">
             <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
-            <img
-              src={selected.image}
-              alt={selected.name}
-              className="aspect-[4/3] w-full object-cover"
-            />
-            <div className="p-6">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                {selected.category}
+              <img
+                src={selected.image}
+                alt={selected.name}
+                className="aspect-[4/3] w-full object-cover"
+              />
+              <div className="p-6">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {selected.category}
+                </div>
+                <h3 className="font-display text-xl font-semibold">{selected.name}</h3>
+                <div className="mt-3 space-y-2 text-sm">
+                  <Row
+                    icon={<MapPin className="h-4 w-4 text-primary" />}
+                    label="Branch"
+                    value={branch}
+                  />
+                  <Row
+                    icon={<Calendar className="h-4 w-4 text-primary" />}
+                    label="Duration"
+                    value={`${days} day${days > 1 ? "s" : ""}`}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="touch-target mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {submitting ? "Sending request..." : "Request booking"}
+                </button>
+
+                <label className="mt-4 flex items-start justify-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={acceptTerms}
+                    onChange={(event) => {
+                      setErrors((current) => ({ ...current, terms: undefined }));
+                      if (event.target.checked) {
+                        setTermsModalOpen(true);
+                        return;
+                      }
+                      setAcceptTerms(false);
+                    }}
+                    aria-invalid={Boolean(errors.terms)}
+                    className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-primary"
+                  />
+                  <span>
+                    I agree to the rental do&apos;s and don&apos;ts and cancellation policy.
+                  </span>
+                </label>
+                {errors.terms && (
+                  <div className="mt-2 text-center text-rose-300">{errors.terms}</div>
+                )}
+
+                <p className="mt-3 text-center text-xs text-muted-foreground">
+                  You won't be charged yet - we'll confirm availability first.
+                </p>
               </div>
-              <h3 className="font-display text-xl font-semibold">{selected.name}</h3>
-              <div className="mt-3 space-y-2 text-sm">
-                <Row
-                  icon={<MapPin className="h-4 w-4 text-primary" />}
-                  label="Branch"
-                  value={branch}
-                />
-                <Row
-                  icon={<Calendar className="h-4 w-4 text-primary" />}
-                  label="Duration"
-                  value={`${days} day${days > 1 ? "s" : ""}`}
-                />
+            </div>
+
+            <div className="rounded-xl border border-border bg-secondary p-5 text-sm">
+              <div className="flex items-center gap-2 font-medium">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                What's included
               </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="touch-target mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {submitting ? "Sending request..." : "Request booking"}
-              </button>
-
-              <label className="mt-4 flex items-start justify-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={acceptTerms}
-                  onChange={(event) => {
-                    setErrors((current) => ({ ...current, terms: undefined }));
-                    if (event.target.checked) {
-                      setTermsModalOpen(true);
-                      return;
-                    }
-                    setAcceptTerms(false);
-                  }}
-                  aria-invalid={Boolean(errors.terms)}
-                  className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-primary"
-                />
-                <span>I agree to the rental do&apos;s and don&apos;ts and cancellation policy.</span>
-              </label>
-              {errors.terms && <div className="mt-2 text-center text-rose-300">{errors.terms}</div>}
-
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                You won't be charged yet - we'll confirm availability first.
-              </p>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted-foreground">
+                <li>Comprehensive insurance</li>
+                <li>24/7 roadside assistance</li>
+                <li>Reservation payments are non-refundable once paid.</li>
+              </ul>
             </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-secondary p-5 text-sm">
-            <div className="flex items-center gap-2 font-medium">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              What's included
-            </div>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted-foreground">
-              <li>Comprehensive insurance</li>
-              <li>24/7 roadside assistance</li>
-              <li>Reservation payments are non-refundable once paid.</li>
-            </ul>
-          </div>
           </div>
         </form>
       </section>
