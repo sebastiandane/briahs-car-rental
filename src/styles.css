@@ -89,6 +89,27 @@
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
   }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--color-primary) 58%, var(--color-muted)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-primary) 58%, var(--color-muted));
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+    background-clip: content-box;
+  }
   h1,
   h2,
   h3,

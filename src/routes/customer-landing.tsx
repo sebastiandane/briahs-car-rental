@@ -11,6 +11,12 @@ import {
   Wallet,
 } from "lucide-react";
 import heroImg from "@/assets/hero-car.jpg";
+import baguioImg from "@/assets/destinations/bagui.webp";
+import elyuImg from "@/assets/destinations/elyu.jpg";
+import pampangaImg from "@/assets/destinations/pampanga.webp";
+import subicImg from "@/assets/destinations/subic.jpg";
+import tagaytayImg from "@/assets/destinations/tagaytay.avif";
+import viganImg from "@/assets/destinations/vigan.webp";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { VehicleCard } from "@/components/site/VehicleCard";
@@ -61,32 +67,32 @@ const destinations = [
   {
     name: "Baguio",
     note: "Pine-city escape, 4–5 hrs north",
-    img: "https://images.unsplash.com/photo-1599661046827-9a64bb68a8d0?w=900&q=70",
+    img: baguioImg,
   },
   {
     name: "La Union",
     note: "Surf town weekends",
-    img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900&q=70",
+    img: elyuImg,
   },
   {
     name: "Tagaytay",
     note: "Ridge views &amp; bulalo",
-    img: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=900&q=70",
+    img: tagaytayImg,
   },
   {
     name: "Subic & Zambales",
     note: "Coastline cruises",
-    img: "https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6?w=900&q=70",
+    img: subicImg,
   },
   {
     name: "Vigan",
     note: "Heritage road trips",
-    img: "https://images.unsplash.com/photo-1542317854-04b0c70b0fcf?w=900&q=70",
+    img: viganImg,
   },
   {
     name: "Pampanga",
     note: "Food &amp; sunsets",
-    img: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=900&q=70",
+    img: pampangaImg,
   },
 ];
 

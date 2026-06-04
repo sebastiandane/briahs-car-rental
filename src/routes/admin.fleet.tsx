@@ -5,7 +5,7 @@ import {
   MaintenanceRecordDialog,
   type MaintenanceRecordDraft,
 } from "@/components/admin/MaintenanceRecordDialog";
-import { Btn, Card, KPI, PageHeader, TInput, TSelect, Toolbar } from "@/components/admin/ui";
+import { Badge, Btn, Card, KPI, PageHeader, TInput, TSelect, Toolbar } from "@/components/admin/ui";
 import { bookings, fleet, peso, type FleetVehicle, type VehicleStatus } from "@/data/admin";
 import {
   Dialog,
@@ -76,21 +76,32 @@ function FleetPage() {
   const [status, setStatus] = useState<(typeof statuses)[number]>("All");
   const [q, setQ] = useState("");
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
-  const [draft, setDraft] = useState<MaintenanceRecordDraft>(() => createDraftFromVehicle(fleet, 0));
-  const [statusOverrides, setStatusOverrides] = useState<Record<string, VehicleStatus>>({});
+  const [draft, setDraft] = useState<MaintenanceRecordDraft>(() =>
+    createDraftFromVehicle(fleet, 0),
+  );
   const [fleetRows, setFleetRows] = useState<FleetVehicle[]>(fleet);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
-  const [addVehicleDraft, setAddVehicleDraft] = useState<AddVehicleDraft>(() => createAddVehicleDraft());
+  const [addVehicleDraft, setAddVehicleDraft] = useState<AddVehicleDraft>(() =>
+    createAddVehicleDraft(),
+  );
   const [addVehicleError, setAddVehicleError] = useState("");
 
   function getEffectiveStatus(vehicle: FleetVehicle) {
-    return statusOverrides[vehicle.id] ?? vehicle.status;
+    return vehicle.status;
+  }
+
+  function handleVehicleBranchChange(vehicleId: string, branch: FleetVehicle["branch"]) {
+    setFleetRows((prev) =>
+      prev.map((vehicle) => (vehicle.id === vehicleId ? { ...vehicle, branch } : vehicle)),
+    );
   }
 
   const countAvailable = fleetRows.filter((v) => getEffectiveStatus(v) === "Available").length;
   const countReserved = fleetRows.filter((v) => getEffectiveStatus(v) === "Reserved").length;
   const countOngoing = fleetRows.filter((v) => getEffectiveStatus(v) === "Rented").length;
-  const countUnderMaintenance = fleetRows.filter((v) => getEffectiveStatus(v) === "Maintenance").length;
+  const countUnderMaintenance = fleetRows.filter(
+    (v) => getEffectiveStatus(v) === "Maintenance",
+  ).length;
   const countCompletedRentals = bookings.filter((b) => b.status === "Completed").length;
 
   const rows = fleetRows
@@ -148,7 +159,10 @@ function FleetPage() {
     setAddVehicleOpen(true);
   }
 
-  function handleAddVehicleField<K extends keyof AddVehicleDraft>(key: K, value: AddVehicleDraft[K]) {
+  function handleAddVehicleField<K extends keyof AddVehicleDraft>(
+    key: K,
+    value: AddVehicleDraft[K],
+  ) {
     setAddVehicleDraft((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -222,11 +236,37 @@ function FleetPage() {
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <KPI accent label="Available vehicles" value={String(countAvailable)} delta="Ready" icon={<Wrench className="h-4 w-4" />} />
-        <KPI label="Reserved vehicles" value={String(countReserved)} delta="Queued" icon={<Wrench className="h-4 w-4" />} />
-        <KPI label="Ongoing rentals" value={String(countOngoing)} delta="Out" icon={<Wrench className="h-4 w-4" />} />
-        <KPI label="Under maintenance" value={String(countUnderMaintenance)} delta="In service" icon={<Wrench className="h-4 w-4" />} />
-        <KPI label="Completed rentals" value={String(countCompletedRentals)} delta="Bookings" icon={<Wrench className="h-4 w-4" />} />
+        <KPI
+          accent
+          label="Available vehicles"
+          value={String(countAvailable)}
+          delta="Ready"
+          icon={<Wrench className="h-4 w-4" />}
+        />
+        <KPI
+          label="Reserved vehicles"
+          value={String(countReserved)}
+          delta="Queued"
+          icon={<Wrench className="h-4 w-4" />}
+        />
+        <KPI
+          label="Ongoing rentals"
+          value={String(countOngoing)}
+          delta="Out"
+          icon={<Wrench className="h-4 w-4" />}
+        />
+        <KPI
+          label="Under maintenance"
+          value={String(countUnderMaintenance)}
+          delta="In service"
+          icon={<Wrench className="h-4 w-4" />}
+        />
+        <KPI
+          label="Completed rentals"
+          value={String(countCompletedRentals)}
+          delta="Bookings"
+          icon={<Wrench className="h-4 w-4" />}
+        />
       </div>
 
       <div className="mt-4">
@@ -263,7 +303,24 @@ function FleetPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {rows.map((vehicle) => (
             <Card key={vehicle.id} className="overflow-hidden">
-              <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-secondary to-background">
+              <div className="relative flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-secondary to-background">
+                <div className="absolute left-3 right-3 top-3 flex items-center justify-between gap-2">
+                  <TSelect
+                    value={vehicle.branch}
+                    onChange={(e) =>
+                      handleVehicleBranchChange(
+                        vehicle.id,
+                        e.target.value as FleetVehicle["branch"],
+                      )
+                    }
+                    className="h-8 max-w-40 rounded-full border-white/15 bg-background/90 px-3 text-xs shadow-sm backdrop-blur"
+                  >
+                    {branchOptions.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </TSelect>
+                  <Badge>{vehicle.effectiveStatus}</Badge>
+                </div>
                 <div className="text-center">
                   <div className="font-display text-3xl font-bold text-primary/70">
                     {vehicle.category[0]}
@@ -279,20 +336,6 @@ function FleetPage() {
                     <h3 className="font-display text-base font-semibold">{vehicle.name}</h3>
                     <div className="font-mono text-xs text-muted-foreground">{vehicle.plate}</div>
                   </div>
-                  <TSelect
-                    className="min-h-9 w-32 min-w-32 text-xs"
-                    value={vehicle.effectiveStatus}
-                    onChange={(e) =>
-                      setStatusOverrides((prev) => ({
-                        ...prev,
-                        [vehicle.id]: e.target.value as VehicleStatus,
-                      }))
-                    }
-                  >
-                    <option>Available</option>
-                    <option>Reserved</option>
-                    <option>Rented</option>
-                  </TSelect>
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-y-1.5 text-xs">
                   <dt className="text-muted-foreground">Make</dt>
@@ -303,8 +346,6 @@ function FleetPage() {
                   <dd className="text-right">{vehicle.color}</dd>
                   <dt className="text-muted-foreground">Chassis No.</dt>
                   <dd className="text-right font-mono text-[11px]">{vehicle.chassisNumber}</dd>
-                  <dt className="text-muted-foreground">Branch</dt>
-                  <dd className="text-right">{vehicle.branch.split(",")[0]}</dd>
                   <dt className="text-muted-foreground">Transmission</dt>
                   <dd className="text-right">{vehicle.transmission}</dd>
                   <dt className="text-muted-foreground">Seats</dt>
@@ -355,30 +396,33 @@ function FleetPage() {
                       {vehicle.category} • {vehicle.transmission} • {vehicle.seats} seats
                     </div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
-                      {vehicle.make} • {vehicle.model} • {vehicle.color} • Chassis: {vehicle.chassisNumber}
+                      {vehicle.make} • {vehicle.model} • {vehicle.color} • Chassis:{" "}
+                      {vehicle.chassisNumber}
                     </div>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs">{vehicle.plate}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{vehicle.branch}</td>
+                  <td className="px-4 py-3">
+                    <TSelect
+                      value={vehicle.branch}
+                      onChange={(e) =>
+                        handleVehicleBranchChange(
+                          vehicle.id,
+                          e.target.value as FleetVehicle["branch"],
+                        )
+                      }
+                      className="h-8 min-w-40 rounded-full text-xs"
+                    >
+                      {branchOptions.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </TSelect>
+                  </td>
                   <td className="px-4 py-3">{vehicle.condition}</td>
                   <td className="px-4 py-3 text-right font-display font-semibold">
                     {peso(vehicle.pricePerDay)}
                   </td>
                   <td className="px-4 py-3">
-                    <TSelect
-                      className="min-h-9 w-36 min-w-36 text-xs"
-                      value={vehicle.effectiveStatus}
-                      onChange={(e) =>
-                        setStatusOverrides((prev) => ({
-                          ...prev,
-                          [vehicle.id]: e.target.value as VehicleStatus,
-                        }))
-                      }
-                    >
-                      <option>Available</option>
-                      <option>Reserved</option>
-                      <option>Rented</option>
-                    </TSelect>
+                    <Badge>{vehicle.effectiveStatus}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Btn variant="primary" onClick={() => openServiceModalByVehicle(vehicle.id)}>
@@ -408,68 +452,136 @@ function FleetPage() {
 
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Plate number</span>
-              <TInput value={addVehicleDraft.plate} onChange={(e) => handleAddVehicleField("plate", e.target.value)} />
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Plate number
+              </span>
+              <TInput
+                value={addVehicleDraft.plate}
+                onChange={(e) => handleAddVehicleField("plate", e.target.value)}
+              />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Chassis number</span>
-              <TInput value={addVehicleDraft.chassisNumber} onChange={(e) => handleAddVehicleField("chassisNumber", e.target.value)} />
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Chassis number
+              </span>
+              <TInput
+                value={addVehicleDraft.chassisNumber}
+                onChange={(e) => handleAddVehicleField("chassisNumber", e.target.value)}
+              />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Make</span>
-              <TInput value={addVehicleDraft.make} onChange={(e) => handleAddVehicleField("make", e.target.value)} />
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Make
+              </span>
+              <TInput
+                value={addVehicleDraft.make}
+                onChange={(e) => handleAddVehicleField("make", e.target.value)}
+              />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Model</span>
-              <TInput value={addVehicleDraft.model} onChange={(e) => handleAddVehicleField("model", e.target.value)} />
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Model
+              </span>
+              <TInput
+                value={addVehicleDraft.model}
+                onChange={(e) => handleAddVehicleField("model", e.target.value)}
+              />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Color</span>
-              <TInput value={addVehicleDraft.color} onChange={(e) => handleAddVehicleField("color", e.target.value)} />
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Color
+              </span>
+              <TInput
+                value={addVehicleDraft.color}
+                onChange={(e) => handleAddVehicleField("color", e.target.value)}
+              />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Number of seats</span>
-              <TInput type="number" min="1" value={addVehicleDraft.seats} onChange={(e) => handleAddVehicleField("seats", e.target.value)} />
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Number of seats
+              </span>
+              <TInput
+                type="number"
+                min="1"
+                value={addVehicleDraft.seats}
+                onChange={(e) => handleAddVehicleField("seats", e.target.value)}
+              />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle type</span>
-              <TSelect value={addVehicleDraft.category} onChange={(e) => handleAddVehicleField("category", e.target.value)}>
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Vehicle type
+              </span>
+              <TSelect
+                value={addVehicleDraft.category}
+                onChange={(e) => handleAddVehicleField("category", e.target.value)}
+              >
                 {vehicleCategories.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </TSelect>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Branch</span>
-              <TSelect value={addVehicleDraft.branch} onChange={(e) => handleAddVehicleField("branch", e.target.value)}>
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Branch
+              </span>
+              <TSelect
+                value={addVehicleDraft.branch}
+                onChange={(e) => handleAddVehicleField("branch", e.target.value)}
+              >
                 {branchOptions.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </TSelect>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</span>
-              <TSelect value={addVehicleDraft.status} onChange={(e) => handleAddVehicleField("status", e.target.value as VehicleStatus)}>
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Status
+              </span>
+              <TSelect
+                value={addVehicleDraft.status}
+                onChange={(e) => handleAddVehicleField("status", e.target.value as VehicleStatus)}
+              >
                 {vehicleStatuses.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </TSelect>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Transmission</span>
-              <TSelect value={addVehicleDraft.transmission} onChange={(e) => handleAddVehicleField("transmission", e.target.value as "Automatic" | "Manual")}>
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Transmission
+              </span>
+              <TSelect
+                value={addVehicleDraft.transmission}
+                onChange={(e) =>
+                  handleAddVehicleField("transmission", e.target.value as "Automatic" | "Manual")
+                }
+              >
                 {transmissionOptions.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </TSelect>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Rate per day</span>
-              <TInput type="number" min="1" value={addVehicleDraft.pricePerDay} onChange={(e) => handleAddVehicleField("pricePerDay", e.target.value)} />
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Rate per day
+              </span>
+              <TInput
+                type="number"
+                min="1"
+                value={addVehicleDraft.pricePerDay}
+                onChange={(e) => handleAddVehicleField("pricePerDay", e.target.value)}
+              />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Condition</span>
-              <TSelect value={addVehicleDraft.condition} onChange={(e) => handleAddVehicleField("condition", e.target.value as FleetVehicle["condition"])}>
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Condition
+              </span>
+              <TSelect
+                value={addVehicleDraft.condition}
+                onChange={(e) =>
+                  handleAddVehicleField("condition", e.target.value as FleetVehicle["condition"])
+                }
+              >
                 {conditionOptions.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
@@ -477,9 +589,7 @@ function FleetPage() {
             </label>
           </div>
 
-          {addVehicleError ? (
-            <p className="text-sm text-rose-400">{addVehicleError}</p>
-          ) : null}
+          {addVehicleError ? <p className="text-sm text-rose-400">{addVehicleError}</p> : null}
 
           <DialogFooter>
             <Btn onClick={() => setAddVehicleOpen(false)}>Cancel</Btn>

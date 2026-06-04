@@ -76,6 +76,30 @@ export type Booking = {
 
 export const bookings: Booking[] = [
   {
+    id: "BR-10287",
+    customer: "Customer Demo",
+    vehicle: "Toyota Vios",
+    plate: "NEA 1284",
+    branch: "Taft, Manila",
+    from: "2026-05-10",
+    to: "2026-05-12",
+    amount: 3600,
+    status: "Completed",
+    payment: "Paid",
+  },
+  {
+    id: "BR-10286",
+    customer: "Customer Demo",
+    vehicle: "Toyota Wigo",
+    plate: "AAJ 2231",
+    branch: "Antipolo, Rizal",
+    from: "2026-04-26",
+    to: "2026-04-27",
+    amount: 1000,
+    status: "Cancelled",
+    payment: "Invalid",
+  },
+  {
     id: "BR-10284",
     customer: "Marco Dela Cruz",
     vehicle: "Toyota Vios",

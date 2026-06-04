@@ -14,9 +14,9 @@ import {
   Bell,
   ShieldCheck,
   Search,
-  ChevronDown,
   MoreHorizontal,
   LogOut,
+  UserRound,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,7 +26,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { canAccessPayments, getAdminSession, isStaffRole, signOutAdmin } from "@/lib/admin-auth";
+import {
+  ADMIN_SESSION_CHANGED_EVENT,
+  canAccessPayments,
+  getAdminSession,
+  isStaffRole,
+  signOutAdmin,
+} from "@/lib/admin-auth";
 import { clearCustomerSession } from "@/lib/customer-auth";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
@@ -60,13 +66,7 @@ function isActive(pathname: string, item: NavItem) {
   return item.exact ? pathname === item.to : pathname.startsWith(item.to);
 }
 
-function SidebarSection({
-  title,
-  items,
-}: {
-  title: string;
-  items: NavItem[];
-}) {
+function SidebarSection({ title, items }: { title: string; items: NavItem[] }) {
   return (
     <div>
       {title ? (
@@ -82,8 +82,7 @@ function SidebarSection({
               activeOptions={n.exact ? { exact: true } : undefined}
               className="group flex items-center gap-3 rounded-md border border-transparent border-l-2 border-l-transparent px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-card/60 hover:text-foreground"
               activeProps={{
-                className:
-                  "text-foreground border-l-primary bg-transparent",
+                className: "text-foreground border-l-primary bg-transparent",
               }}
             >
               <n.icon className="h-4 w-4 shrink-0 opacity-80" />
@@ -111,8 +110,11 @@ export function AdminShell() {
     ? navStaffModules
     : [...navDecisionSupport, ...coreOperations, ...navAdmin];
   const current = navAll.find((n) => isActive(pathname, n));
-  const adminContainsCurrent = navAdmin.some((n) => isActive(pathname, n));
-  const [adminNavOpen, setAdminNavOpen] = useState(() => adminContainsCurrent);
+  const currentLabel = pathname.startsWith("/admin/profile")
+    ? "Edit Profile"
+    : (current?.label ?? "Dashboard");
+  const userInitials = getInitials(session?.name ?? "");
+  const mobileNavItems = staffView ? navStaffModules : [...navDecisionSupport, ...coreOperations];
 
   useEffect(() => {
     const activeSession = getAdminSession();
@@ -124,8 +126,17 @@ export function AdminShell() {
   }, [navigate]);
 
   useEffect(() => {
-    if (adminContainsCurrent) setAdminNavOpen(true);
-  }, [adminContainsCurrent]);
+    function syncSession() {
+      setSession(getAdminSession());
+    }
+
+    window.addEventListener(ADMIN_SESSION_CHANGED_EVENT, syncSession);
+    window.addEventListener("storage", syncSession);
+    return () => {
+      window.removeEventListener(ADMIN_SESSION_CHANGED_EVENT, syncSession);
+      window.removeEventListener("storage", syncSession);
+    };
+  }, []);
 
   useEffect(() => {
     if (!session) return;
@@ -143,12 +154,11 @@ export function AdminShell() {
       return;
     }
 
-    const allowedPrefixes = [
-      "/admin/bookings",
-      "/admin/calendar",
-    ];
+    const allowedPrefixes = ["/admin/bookings", "/admin/calendar", "/admin/profile"];
 
-    if (!allowedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    if (
+      !allowedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+    ) {
       void navigate({ to: "/admin/bookings", replace: true });
     }
   }, [navigate, pathname, session]);
@@ -171,6 +181,17 @@ export function AdminShell() {
         </div>
       </div>
     );
+  }
+
+  function getInitials(name: string) {
+    const initials = name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("");
+
+    return initials || "A";
   }
 
   return (
@@ -199,37 +220,16 @@ export function AdminShell() {
               <>
                 <SidebarSection title="Decision Support" items={navDecisionSupport} />
                 <SidebarSection title="Core Operations" items={coreOperations} />
+                <SidebarSection title="" items={navAdmin} />
               </>
             )}
-
-            {!staffView ? (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setAdminNavOpen((open) => !open)}
-                  className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
-                  aria-expanded={adminNavOpen}
-                >
-                  <span>Admin Only</span>
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${adminNavOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {adminNavOpen && (
-                  <div className="mt-2">
-                    <SidebarSection title="" items={navAdmin} />
-                  </div>
-                )}
-              </div>
-            ) : null}
           </div>
         </nav>
 
         <div className="border-t border-border p-4">
           <div className="flex items-center gap-3 rounded-md bg-card px-3 py-2.5">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/15 font-display text-xs font-semibold text-primary">
-              KI
+              {userInitials}
             </span>
             <div className="leading-tight">
               <div className="text-[13px] font-medium">{session.name}</div>
@@ -245,7 +245,7 @@ export function AdminShell() {
           <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
             <span>{isStaffRole(role) ? "Staff" : "Admin"}</span>
             <span className="text-border">/</span>
-            <span className="truncate text-foreground">{current?.label ?? "Dashboard"}</span>
+            <span className="truncate text-foreground">{currentLabel}</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
             <label className="hidden min-h-11 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm text-muted-foreground md:flex">
@@ -274,7 +274,7 @@ export function AdminShell() {
                   className="touch-target grid place-items-center rounded-md border border-border bg-card px-2.5 text-sm transition-colors hover:bg-secondary"
                 >
                   <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
-                    KI
+                    {userInitials}
                   </span>
                 </button>
               </DropdownMenuTrigger>
@@ -283,6 +283,13 @@ export function AdminShell() {
                   <div className="text-sm font-medium text-foreground">{session.name}</div>
                   <div className="text-xs font-normal text-muted-foreground">{session.role}</div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to={"/admin/profile" as never}>
+                    <UserRound className="h-4 w-4" />
+                    Edit Profile
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={handleSignOut}
@@ -298,7 +305,7 @@ export function AdminShell() {
 
         <nav className="border-b border-border bg-surface/80 px-4 py-3 lg:hidden">
           <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Admin sections">
-            {[...navDecisionSupport, ...coreOperations].map((n) => (
+            {mobileNavItems.map((n) => (
               <Link
                 key={n.to}
                 to={n.to as never}
